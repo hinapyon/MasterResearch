@@ -12,8 +12,11 @@ import WatchConnectivity    //iPhoneと通信するためのフレームワー�
 
 //  メインのUI
 struct ContentView: View {
-    @State private var isRecording = false  //記録中かどうかを判定
+    // 記録中かどうかの状態を管理
+    @State private var isRecording = false
+    // 加速度データの表示テキスト
     @State private var accelerationText = "X: 0.0, Y: 0.0, Z: 0.0"
+    // ジャイロデータの表示テキスト
     @State private var gyroText = "X: 0.0, Y: 0.0, Z: 0.0"
 
     var body: some View {
@@ -25,6 +28,7 @@ struct ContentView: View {
             Text(gyroText)
                 .padding()
 
+            // 記録開始・停止ボタン
             Button(action: {
                 self.toggleRecording()
             }) {
@@ -32,29 +36,24 @@ struct ContentView: View {
             }
         }
         .onAppear() {
+            // モーションデータのセットアップ
             self.setupMotionManager()
         }
     }
 
-    let motionManager = CMMotionManager()   //CoreMotionのデータを扱うインスタンス作成
+    // CoreMotionのインスタンス作成
+    let motionManager = CMMotionManager()
 
-    //  motionManagerのセットアップを行う
+    // モーションデータのセットアップ
     func setupMotionManager() {
-        if WCSession.isSupported() {
-            WCSession.default.activate()
+        if motionManager.isDeviceMotionAvailable {
+            motionManager.deviceMotionUpdateInterval = 0.1
         } else {
-            print("WatchConnectivity not supported on this device")
-        }
-
-        if motionManager.isAccelerometerAvailable && motionManager.isGyroAvailable { // 加速度とジャイロが利用可能かどうか
-            motionManager.accelerometerUpdateInterval = 0.1 // 加速度データのサンプリング周波数
-            motionManager.gyroUpdateInterval = 0.1 // ジャイロデータのサンプリング周波数
-        } else {
-            print("Accelerometer or Gyroscope not available") // 利用できない場合はエラーメッセージをコンソールに出力
+            print("motion is not available")
         }
     }
-
-    // 記録と停止を繰り返す
+    
+    // 記録の開始・停止を切り替える
     func toggleRecording() {
         if isRecording {
             stopRecording()
@@ -65,56 +64,50 @@ struct ContentView: View {
 
     // 記録開始
     func startRecording() {
-        motionManager.startAccelerometerUpdates(to: OperationQueue.main) { (accelerationData, error) in
-            // 加速度データの取得
-            if let acceleration = accelerationData?.acceleration {
-                // 角速度データの取得
-                if let gyro = self.motionManager.gyroData?.rotationRate {
-                    // タイムスタンプの取得
-                    let timestamp = Date().timeIntervalSince1970
-                    // タイムスタンプと加速度データとジャイロデータを同時に送信
-                    self.sendDataToiPhone(timestamp: timestamp, acceleration: acceleration, gyro: gyro)
-                    // 表示テキストの更新
-                    self.updateAccelerationText(acceleration)
-                    self.updateGyroText(gyro)
-                }
+        motionManager.startDeviceMotionUpdates(to: OperationQueue.main) { (motionData, error) in
+            // モーションデータの取得
+            if let motion = motionData {
+                // 加速度データの表示
+                let acceleration = motion.userAcceleration
+                self.accelerationText = String(format: "X: %.2f, Y: %.2f, Z: %.2f", acceleration.x, acceleration.y, acceleration.z)
+
+                // ジャイロデータの表示
+                let gyro = motion.rotationRate
+                self.gyroText = String(format: "X: %.2f, Y: %.2f, Z: %.2f", gyro.x, gyro.y, gyro.z)
             }
         }
+        
         isRecording = true
     }
 
-    // 加速度データの表示テキスト更新
-    func updateAccelerationText(_ acceleration: CMAcceleration) {
-        self.accelerationText = String(format: "X: %.2f, Y: %.2f, Z: %.2f", acceleration.x, acceleration.y, acceleration.z)
-    }
 
-    // ジャイロデータの表示テキスト更新
-    func updateGyroText(_ gyro: CMRotationRate) {
-        self.gyroText = String(format: "X: %.2f, Y: %.2f, Z: %.2f", gyro.x, gyro.y, gyro.z)
-    }
 
-    //  記録終了
+    // タイムスタンプの取得
+    //let timestamp = Date().timeIntervalSince1970
+    // iPhoneにデータを送信
+    //self.sendDataToiPhone(timestamp: timestamp, acceleration: acceleration, gyro: gyro)
+
+    // 記録停止
     func stopRecording() {
-        motionManager.stopAccelerometerUpdates()
-        motionManager.stopGyroUpdates()
+        motionManager.stopDeviceMotionUpdates()
         isRecording = false
     }
-
+    
     // データをiPhoneに送信
-    func sendDataToiPhone(timestamp: TimeInterval, acceleration: CMAcceleration, gyro: CMRotationRate) {
-        guard WCSession.default.isReachable else {
-            print("iPhone not reachable")
-            return
-        }
+     func sendDataToiPhone(timestamp: TimeInterval, acceleration: CMAcceleration, gyro: CMRotationRate) {
+         guard WCSession.default.isReachable else {
+             print("iPhone not reachable")
+             return
+         }
 
-        let message = ["timestamp": timestamp,
-            "acceleration": [acceleration.x, acceleration.y, acceleration.z],
-            "gyro": [gyro.x, gyro.y, gyro.z]] as [String : Any]
+         let message = ["timestamp": timestamp,
+             "acceleration": [acceleration.x, acceleration.y, acceleration.z],
+             "gyro": [gyro.x, gyro.y, gyro.z]] as [String : Any]
 
-        WCSession.default.sendMessage(message, replyHandler: nil, errorHandler: { error in
-            print("Error sending data to iPhone: \(error)")
-        })
-    }
+         WCSession.default.sendMessage(message, replyHandler: nil, errorHandler: { error in
+             print("Error sending data to iPhone: \(error)")
+         })
+     }
 }
 
 struct ContentView_Previews: PreviewProvider {
