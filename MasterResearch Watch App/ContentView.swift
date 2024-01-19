@@ -12,13 +12,11 @@ import WatchConnectivity    //iPhoneと通信するためのフレームワー�
 
 //  メインのUI
 struct ContentView: View {
-    // 記録中かどうかの状態を管理
-    @State private var isRecording = false
-    // 加速度データの表示テキスト
-    @State private var accelerationText = "X: 0.0, Y: 0.0, Z: 0.0"
-    // ジャイロデータの表示テキスト
-    @State private var gyroText = "X: 0.0, Y: 0.0, Z: 0.0"
+    @State private var isRecording = false  // 記録中かどうかの状態を管理
+    @State private var accelerationText = "X: 0.0, Y: 0.0, Z: 0.0"  // 加速度データの表示テキスト
+    @State private var gyroText = "X: 0.0, Y: 0.0, Z: 0.0"  // ジャイロデータの表示テキスト
 
+    // 画面表示構成
     var body: some View {
         VStack {
             Text("Acceleration")
@@ -35,14 +33,13 @@ struct ContentView: View {
                 Text(isRecording ? "Stop Recording" : "Start Recording")
             }
         }
-        .onAppear() {
+        .onAppear() {   // Viewが表示されるタイミングで一度だけ実行される
             // モーションデータのセットアップ
             self.setupMotionManager()
         }
     }
 
-    // CoreMotionのインスタンス作成
-    let motionManager = CMMotionManager()
+    let motionManager = CMMotionManager()    // CoreMotionのインスタンス作成
 
     // モーションデータのセットアップ
     func setupMotionManager() {
@@ -52,7 +49,7 @@ struct ContentView: View {
             print("motion is not available")
         }
     }
-    
+
     // 記録の開始・停止を切り替える
     func toggleRecording() {
         if isRecording {
@@ -67,6 +64,7 @@ struct ContentView: View {
         motionManager.startDeviceMotionUpdates(to: OperationQueue.main) { (motionData, error) in
             // モーションデータの取得
             if let motion = motionData {
+                let timestamp = Date().timeIntervalSince1970    // タイムスタンプの取得
                 // 加速度データの表示
                 let acceleration = motion.userAcceleration
                 self.accelerationText = String(format: "X: %.2f, Y: %.2f, Z: %.2f", acceleration.x, acceleration.y, acceleration.z)
@@ -76,14 +74,8 @@ struct ContentView: View {
                 self.gyroText = String(format: "X: %.2f, Y: %.2f, Z: %.2f", gyro.x, gyro.y, gyro.z)
             }
         }
-        
         isRecording = true
     }
-
-
-
-    // タイムスタンプの取得
-    //let timestamp = Date().timeIntervalSince1970
     // iPhoneにデータを送信
     //self.sendDataToiPhone(timestamp: timestamp, acceleration: acceleration, gyro: gyro)
 
@@ -92,22 +84,22 @@ struct ContentView: View {
         motionManager.stopDeviceMotionUpdates()
         isRecording = false
     }
-    
+
     // データをiPhoneに送信
-     func sendDataToiPhone(timestamp: TimeInterval, acceleration: CMAcceleration, gyro: CMRotationRate) {
-         guard WCSession.default.isReachable else {
-             print("iPhone not reachable")
-             return
-         }
+    func sendDataToiPhone(timestamp: TimeInterval, acceleration: CMAcceleration, gyro: CMRotationRate) {
+        guard WCSession.default.isReachable else {
+            print("iPhone not reachable")
+            return
+        }
 
-         let message = ["timestamp": timestamp,
-             "acceleration": [acceleration.x, acceleration.y, acceleration.z],
-             "gyro": [gyro.x, gyro.y, gyro.z]] as [String : Any]
+        let message = ["timestamp": timestamp,
+            "acceleration": [acceleration.x, acceleration.y, acceleration.z],
+            "gyro": [gyro.x, gyro.y, gyro.z]] as [String : Any]
 
-         WCSession.default.sendMessage(message, replyHandler: nil, errorHandler: { error in
-             print("Error sending data to iPhone: \(error)")
-         })
-     }
+        WCSession.default.sendMessage(message, replyHandler: nil, errorHandler: { error in
+            print("Error sending data to iPhone: \(error)")
+        })
+    }
 }
 
 struct ContentView_Previews: PreviewProvider {
