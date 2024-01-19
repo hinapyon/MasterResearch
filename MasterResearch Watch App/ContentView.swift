@@ -64,7 +64,7 @@ struct ContentView: View {
         motionManager.startDeviceMotionUpdates(to: OperationQueue.main) { (motionData, error) in
             // モーションデータの取得
             if let motion = motionData {
-                let timestamp = Date().timeIntervalSince1970    // タイムスタンプの取得
+                let timestamp = Date().timeIntervalSince1970 * 1000    // タイムスタンプの取得
                 // 加速度データの表示
                 let acceleration = motion.userAcceleration
                 self.accelerationText = String(format: "X: %.2f, Y: %.2f, Z: %.2f", acceleration.x, acceleration.y, acceleration.z)
@@ -72,12 +72,13 @@ struct ContentView: View {
                 // ジャイロデータの表示
                 let gyro = motion.rotationRate
                 self.gyroText = String(format: "X: %.2f, Y: %.2f, Z: %.2f", gyro.x, gyro.y, gyro.z)
+
+                // iPhoneにデータを送信
+                self.sendDataToiPhone(timestamp: timestamp, acceleration: acceleration, gyro: gyro)
             }
         }
         isRecording = true
     }
-    // iPhoneにデータを送信
-    //self.sendDataToiPhone(timestamp: timestamp, acceleration: acceleration, gyro: gyro)
 
     // 記録停止
     func stopRecording() {
@@ -96,9 +97,9 @@ struct ContentView: View {
             "acceleration": [acceleration.x, acceleration.y, acceleration.z],
             "gyro": [gyro.x, gyro.y, gyro.z]] as [String : Any]
 
-        WCSession.default.sendMessage(message, replyHandler: nil, errorHandler: { error in
+        WCSession.default.sendMessage(message, replyHandler: nil) { error in
             print("Error sending data to iPhone: \(error)")
-        })
+        }
     }
 }
 
