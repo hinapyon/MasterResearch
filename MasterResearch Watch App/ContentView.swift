@@ -44,7 +44,7 @@ struct ContentView: View {
     // モーションデータのセットアップ
     func setupMotionManager() {
         if motionManager.isDeviceMotionAvailable {
-            motionManager.deviceMotionUpdateInterval = 0.1
+            motionManager.deviceMotionUpdateInterval = 1
         } else {
             print("motion is not available")
         }
