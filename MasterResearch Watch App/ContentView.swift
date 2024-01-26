@@ -88,19 +88,19 @@ struct ContentView: View {
 
     // データをiPhoneに送信
     func sendDataToiPhone(timestamp: TimeInterval, acceleration: CMAcceleration, gyro: CMRotationRate) {
-        guard WCSession.default.isReachable else {
-            print("iPhone not reachable")
-            return
-        }
-
         let message = ["timestamp": timestamp,
-            "acceleration": [acceleration.x, acceleration.y, acceleration.z],
-            "gyro": [gyro.x, gyro.y, gyro.z]] as [String : Any]
+                       "acceleration": [acceleration.x, acceleration.y, acceleration.z],
+                       "gyro": [gyro.x, gyro.y, gyro.z]] as [String : Any]
 
-        WCSession.default.sendMessage(message, replyHandler: nil) { error in
-            print("Error sending data to iPhone: \(error)")
+        if WCSession.default.isReachable {
+            WCSession.default.sendMessage(message, replyHandler: nil) { error in
+                print("Error sending data to iPhone: \(error)")
+            }
+        } else {
+            print("WCSession is not reachable")
         }
     }
+
 }
 
 struct ContentView_Previews: PreviewProvider {
