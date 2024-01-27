@@ -17,6 +17,10 @@ class MotionDataManager: ObservableObject {
     @Published var gyroText = "X: 0.0, Y: 0.0, Z: 0.0"
     private let updateInterval = 1.0 // 1Hz
 
+    var isDeviceMotionAvailable: Bool {
+        motionManager.isDeviceMotionAvailable
+    }
+
     func startUpdates() {
         if motionManager.isDeviceMotionAvailable {
             motionManager.deviceMotionUpdateInterval = updateInterval
@@ -36,6 +40,32 @@ class MotionDataManager: ObservableObject {
         accelerationText = String(format: "X: %.2f, Y: %.2f, Z: %.2f", acceleration.x, acceleration.y, acceleration.z)
         let gyro = motion.rotationRate
         gyroText = String(format: "X: %.2f, Y: %.2f, Z: %.2f", gyro.x, gyro.y, gyro.z)
+        
+        // iPhoneにデータを送信
+        sendMotionDataToiPhone(motion)
+    }
+    
+    // MotionDataManager内に追加
+    func sendMotionDataToiPhone(_ motion: CMDeviceMotion) {
+        guard WCSession.isSupported() else { return }
+        let session = WCSession.default
+
+        if session.isReachable {
+            let timestamp = Date().timeIntervalSince1970
+            let data: [String: Any] = [
+                "timestamp": timestamp,
+                "accelerationX": motion.userAcceleration.x,
+                "accelerationY": motion.userAcceleration.y,
+                "accelerationZ": motion.userAcceleration.z,
+                "gyroX": motion.rotationRate.x,
+                "gyroY": motion.rotationRate.y,
+                "gyroZ": motion.rotationRate.z
+            ]
+
+            session.sendMessage(data, replyHandler: nil) { error in
+                print("Error sending message: \(error.localizedDescription)")
+            }
+        }
     }
 }
 
@@ -46,16 +76,25 @@ struct ContentView: View {
 
     var body: some View {
         VStack {
-            Text("Acceleration")
-            Text(motionData.accelerationText)
-                .padding()
-            Text("Gyro")
-            Text(motionData.gyroText)
-                .padding()
+            if motionData.isDeviceMotionAvailable {
+                Text("Acceleration")
+                Text(motionData.accelerationText)
+                    .padding()
+                Text("Gyro")
+                Text(motionData.gyroText)
+                    .padding()
 
-            Button(action: toggleRecording) {
-                Text(isRecording ? "Stop Recording" : "Start Recording")
+                Button(action: toggleRecording) {
+                    Text(isRecording ? "Stop Recording" : "Start Recording")
+                }
+            } else {
+                Text("Device Motion Not Available")
+                    .foregroundColor(.red)
             }
+        }
+        .onAppear {
+            // 初期化時にデバイスモーションの可用性をチェック
+            self.isRecording = false
         }
     }
 
