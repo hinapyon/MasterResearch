@@ -6,80 +6,90 @@
 //
 
 // ライブラリのインクルード
-import SwiftUI  //AppleのUIフレームワーク
-import WatchConnectivity    //iPhoneと通信するためのフレームワーク
+import SwiftUI
+import Foundation
+import WatchConnectivity
 
-// WCSessionDelegateを実装するクラス
-class SessionManager: NSObject, WCSessionDelegate {
-    func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
-        
-    }
+struct ContentView: View {
+    @StateObject private var wcSessionManager = WCSessionManager()
     
-    func sessionDidBecomeInactive(_ session: WCSession) {
-        
+    var body: some View {
+        NavigationView {
+            List {
+                ForEach(wcSessionManager.messages, id: \.self) { msg in
+                    Text(msg)
+                }
+            }
+            .navigationBarTitle("Received Data", displayMode: .inline)
+            .toolbar {
+                Button("Export CSV") {
+                    wcSessionManager.exportData()
+                }
+            }
+        }
+        .onAppear {
+            wcSessionManager.startSession()
+        }
     }
-    
-    func sessionDidDeactivate(_ session: WCSession) {
-        
-    }
-    
-    var updateHandler: ((String, String, String) -> Void)?
+}
 
+class WCSessionManager: NSObject, ObservableObject, WCSessionDelegate {
+    @Published var messages: [String] = []
+    
     override init() {
         super.init()
+        startSession()
+    }
+    
+    func startSession() {
         if WCSession.isSupported() {
             let session = WCSession.default
             session.delegate = self
             session.activate()
         }
     }
-
+    
     func session(_ session: WCSession, didReceiveMessage message: [String : Any]) {
-        if let timestamp = message["timestamp"] as? TimeInterval,
-           let acceleration = message["acceleration"] as? [Double],
-           let gyro = message["gyro"] as? [Double] {
-            let timestampText = String(format: "%.2f", timestamp)
-            let accelerationText = String(format: "X: %.2f, Y: %.2f, Z: %.2f", acceleration[0], acceleration[1], acceleration[2])
-            let gyroText = String(format: "X: %.2f, Y: %.2f, Z: %.2f", gyro[0], gyro[1], gyro[2])
-
-            DispatchQueue.main.async {
-                self.updateHandler?(timestampText, accelerationText, gyroText)
+        DispatchQueue.main.async {
+            // 例としてtimestamp, acceleration, gyroを文字列に変換しています
+            if let timestamp = message["timestamp"] as? TimeInterval,
+               let acceleration = message["acceleration"] as? [Double],
+               let gyro = message["gyro"] as? [Double] {
+                let msg = "Time: \(timestamp), Acc: \(acceleration), Gyro: \(gyro)"
+                self.messages.append(msg)
             }
         }
     }
-}
+    
+    // CSVファイルとしてデータを出力
+    func exportData() {
+        let fileName = "MotionData.csv"
+        let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let path = documentsDirectory.appendingPathComponent(fileName)
 
-// メインのUI
-struct ContentView: View {
-    @State private var timestampText = "0.0"
-    @State private var accelerationText = "X: 0.0, Y: 0.0, Z: 0.0"
-    @State private var gyroText = "X: 0.0, Y: 0.0, Z: 0.0"
-
-    let sessionManager = SessionManager()
-
-    var body: some View {
-        VStack {
-            Text("Timestamp: \(timestampText)")
-                .padding()
-            Text("Acceleration")
-            Text(accelerationText)
-                .padding()
-            Text("Gyro")
-            Text(gyroText)
-                .padding()
+        
+        var csvText = "Timestamp,AccX,AccY,AccZ,GyroX,GyroY,GyroZ\n"
+        
+        for msg in messages {
+            csvText += "\(msg)\n"
         }
-        .onAppear() {
-            sessionManager.updateHandler = { timestamp, acceleration, gyro in
-                self.timestampText = timestamp
-                self.accelerationText = acceleration
-                self.gyroText = gyro
-            }
+        
+        do {
+            try csvText.write(to: path, atomically: true, encoding: String.Encoding.utf8)
+            print("Saved to \(path)")
+        } catch {
+            print("Failed to save file: \(error)")
         }
+        
+        // ここでファイル共有や他のアクションを実行できます
     }
-}
-
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        ContentView()
+    
+    // 必要なデリゲートメソッドのスタブ
+    func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {}
+    
+    func sessionDidBecomeInactive(_ session: WCSession) {}
+    
+    func sessionDidDeactivate(_ session: WCSession) {
+        WCSession.default.activate()
     }
 }

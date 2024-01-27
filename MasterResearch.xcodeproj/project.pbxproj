@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		1B70DC3A2B553FD6003818EE /* MasterResearchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B70DC392B553FD6003818EE /* MasterResearchApp.swift */; };
 		1B70DC3C2B553FD6003818EE /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B70DC3B2B553FD6003818EE /* ContentView.swift */; };
 		1B70DC3E2B553FD8003818EE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1B70DC3D2B553FD8003818EE /* Assets.xcassets */; };
 		1B70DC412B553FD8003818EE /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1B70DC402B553FD8003818EE /* Preview Assets.xcassets */; };
@@ -16,6 +15,7 @@
 		1B70DC4E2B553FD8003818EE /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B70DC4D2B553FD8003818EE /* ContentView.swift */; };
 		1B70DC502B553FDA003818EE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1B70DC4F2B553FDA003818EE /* Assets.xcassets */; };
 		1B70DC532B553FDA003818EE /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1B70DC522B553FDA003818EE /* Preview Assets.xcassets */; };
+		1B9D9CBC2B657B16003D27C0 /* MasterResearchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B70DC392B553FD6003818EE /* MasterResearchApp.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -176,7 +176,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1510;
-				LastUpgradeCheck = 1510;
+				LastUpgradeCheck = 1520;
 				TargetAttributes = {
 					1B70DC352B553FD6003818EE = {
 						CreatedOnToolsVersion = 15.1;
@@ -231,8 +231,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1B9D9CBC2B657B16003D27C0 /* MasterResearchApp.swift in Sources */,
 				1B70DC3C2B553FD6003818EE /* ContentView.swift in Sources */,
-				1B70DC3A2B553FD6003818EE /* MasterResearchApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -290,6 +290,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -351,6 +352,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
