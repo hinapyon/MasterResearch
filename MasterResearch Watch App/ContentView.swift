@@ -10,7 +10,25 @@ import SwiftUI  //AppleのUIフレームワーク
 import CoreMotion   //モーションデータを利用するためのフレームワーク
 import WatchConnectivity    //iPhoneと通信するためのフレームワーク
 
-// モーションデータ管理クラス
+class WatchSessionManager: NSObject, WCSessionDelegate {
+    static let shared = WatchSessionManager()
+
+    override init() {
+        super.init()
+        if WCSession.isSupported() {
+            let session = WCSession.default
+            session.delegate = self
+            session.activate()
+        }
+    }
+
+    func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
+        // セッションのアクティベーションが完了した時の処理
+    }
+
+    // その他のWCSessionDelegateメソッドは必要に応じて実装
+}
+
 class MotionDataManager: ObservableObject {
     private var motionManager = CMMotionManager()
     @Published var accelerationText = "X: 0.0, Y: 0.0, Z: 0.0"
@@ -45,24 +63,27 @@ class MotionDataManager: ObservableObject {
         sendMotionDataToiPhone(motion)
     }
     
-    // MotionDataManager内に追加
     func sendMotionDataToiPhone(_ motion: CMDeviceMotion) {
-        guard WCSession.isSupported() else { return }
-        let session = WCSession.default
+        let timestamp = Date().timeIntervalSince1970
+        let data: [String: Any] = [
+            "timestamp": timestamp,
+            "accelerationX": motion.userAcceleration.x,
+            "accelerationY": motion.userAcceleration.y,
+            "accelerationZ": motion.userAcceleration.z,
+            "gyroX": motion.rotationRate.x,
+            "gyroY": motion.rotationRate.y,
+            "gyroZ": motion.rotationRate.z
+        ]
 
-        if session.isReachable {
-            let timestamp = Date().timeIntervalSince1970
-            let data: [String: Any] = [
-                "timestamp": timestamp,
-                "accelerationX": motion.userAcceleration.x,
-                "accelerationY": motion.userAcceleration.y,
-                "accelerationZ": motion.userAcceleration.z,
-                "gyroX": motion.rotationRate.x,
-                "gyroY": motion.rotationRate.y,
-                "gyroZ": motion.rotationRate.z
-            ]
+        WatchSessionManager.shared.sendMotionData(data: data)
+    }
+}
 
-            session.sendMessage(data, replyHandler: nil) { error in
+// WatchSessionManager内のデータ送信メソッドを追加
+extension WatchSessionManager {
+    func sendMotionData(data: [String: Any]) {
+        if WCSession.default.isReachable {
+            WCSession.default.sendMessage(data, replyHandler: nil) { error in
                 print("Error sending message: \(error.localizedDescription)")
             }
         }
