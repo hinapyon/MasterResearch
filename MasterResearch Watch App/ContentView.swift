@@ -21,6 +21,24 @@ class WatchSessionManager: NSObject, WCSessionDelegate {
             session.activate()
         }
     }
+    
+    func sendMotionData(data: [String: Any]) {
+        if WCSession.default.isReachable {
+            WCSession.default.sendMessage(data, replyHandler: nil) { error in
+                print("Error sending message: \(error.localizedDescription)")
+            }
+        }
+    }
+    
+    func sendMessage(_ message: [String: Any]) {
+        guard WCSession.default.isReachable else {
+            print("iPhone is not reachable.")
+            return
+        }
+        WCSession.default.sendMessage(message, replyHandler: nil) { error in
+            print("Error sending message: \(error.localizedDescription)")
+        }
+    }
 
     func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
         // セッションのアクティベーションが完了した時の処理
@@ -76,27 +94,6 @@ class MotionDataManager: ObservableObject {
         ]
 
         WatchSessionManager.shared.sendMotionData(data: data)
-    }
-}
-
-// WatchSessionManager内のデータ送信メソッドを追加
-extension WatchSessionManager {
-    func sendMotionData(data: [String: Any]) {
-        if WCSession.default.isReachable {
-            WCSession.default.sendMessage(data, replyHandler: nil) { error in
-                print("Error sending message: \(error.localizedDescription)")
-            }
-        }
-    }
-    
-    func sendMessage(_ message: [String: Any]) {
-        guard WCSession.default.isReachable else {
-            print("iPhone is not reachable.")
-            return
-        }
-        WCSession.default.sendMessage(message, replyHandler: nil) { error in
-            print("Error sending message: \(error.localizedDescription)")
-        }
     }
 }
 
