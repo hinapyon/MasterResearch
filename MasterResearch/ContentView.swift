@@ -46,12 +46,24 @@ class SessionManager: NSObject, ObservableObject, WCSessionDelegate {
            let gyroY = message["gyroY"] as? Double,
            let gyroZ = message["gyroZ"] as? Double {
             
-            let formattedDate = DateFormatter.localizedString(from: Date(timeIntervalSince1970: timestamp), dateStyle: .short, timeStyle: .long)
-            
+            let formattedDate = DateFormatter.localizedString(from: Date(timeIntervalSince1970: timestamp), dateStyle: .medium, timeStyle: .medium)
+                   
+            // 数値を小数点以下2桁でフォーマット
+            let formattedAccelerationX = String(format: "%.2f", accelerationX)
+            let formattedAccelerationY = String(format: "%.2f", accelerationY)
+            let formattedAccelerationZ = String(format: "%.2f", accelerationZ)
+            let formattedGyroX = String(format: "%.2f", gyroX)
+            let formattedGyroY = String(format: "%.2f", gyroY)
+            let formattedGyroZ = String(format: "%.2f", gyroZ)
+                   
             self.receivedDataText = """
             Timestamp: \(formattedDate)
-            Acceleration - X: \(accelerationX), Y: \(accelerationY), Z: \(accelerationZ)
-            Gyro - X: \(gyroX), Y: \(gyroY), Z: \(gyroZ)
+                   
+            **Acceleration**
+            X: \(formattedAccelerationX), Y: \(formattedAccelerationY), Z: \(formattedAccelerationZ)
+                   
+            **Gyro**
+            X: \(formattedGyroX), Y: \(formattedGyroY), Z: \(formattedGyroZ)
             """
         }
     }
