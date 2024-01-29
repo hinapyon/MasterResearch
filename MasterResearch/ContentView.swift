@@ -21,6 +21,8 @@ class SessionManager: NSObject, ObservableObject, WCSessionDelegate {
     
     @Published var receivedDataText = "Waiting for data..."
     static let shared = SessionManager()
+    // 受信したデータを保存する配列
+    var receivedDataArray: [[String: Any]] = []
 
     override init() {
         super.init()
@@ -32,8 +34,14 @@ class SessionManager: NSObject, ObservableObject, WCSessionDelegate {
     }
     
     func session(_ session: WCSession, didReceiveMessage message: [String : Any]) {
-        DispatchQueue.main.async { [weak self] in
-            self?.handleReceivedMessage(message)
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                
+            // メッセージを配列に追加
+            self.receivedDataArray.append(message)
+                
+            // メッセージを処理してUIに表示するテキストを更新
+            self.handleReceivedMessage(message)
         }
     }
     

@@ -88,6 +88,16 @@ extension WatchSessionManager {
             }
         }
     }
+    
+    func sendMessage(_ message: [String: Any]) {
+        guard WCSession.default.isReachable else {
+            print("iPhone is not reachable.")
+            return
+        }
+        WCSession.default.sendMessage(message, replyHandler: nil) { error in
+            print("Error sending message: \(error.localizedDescription)")
+        }
+    }
 }
 
 // メインのUI
@@ -122,6 +132,9 @@ struct ContentView: View {
     func toggleRecording() {
         if isRecording {
             motionData.stopUpdates()
+            // ここでiPhoneに受信終了のメッセージを送信します。
+            let message = ["recording": "stopped"]
+            WatchSessionManager.shared.sendMessage(message)
         } else {
             motionData.startUpdates()
         }
