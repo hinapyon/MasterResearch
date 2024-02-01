@@ -12,7 +12,7 @@ class MotionDataManager: ObservableObject {
     private var motionManager = CMMotionManager()
     @Published var accelerationText = "X: 0.0, Y: 0.0, Z: 0.0"
     @Published var gyroText = "X: 0.0, Y: 0.0, Z: 0.0"
-    private let updateInterval = 1.0 // 100Hzの間違いかもしれません。1Hzなら1.0です。
+    private let updateInterval = 1.0 // 1Hz
 
     var isDeviceMotionAvailable: Bool {
         motionManager.isDeviceMotionAvailable
@@ -37,7 +37,7 @@ class MotionDataManager: ObservableObject {
         accelerationText = String(format: "X: %.2f, Y: %.2f, Z: %.2f", acceleration.x, acceleration.y, acceleration.z)
         let gyro = motion.rotationRate
         gyroText = String(format: "X: %.2f, Y: %.2f, Z: %.2f", gyro.x, gyro.y, gyro.z)
-        
+
         // iPhoneにデータを送信
         let timestamp = Date().timeIntervalSince1970
         let data: [String: Any] = [

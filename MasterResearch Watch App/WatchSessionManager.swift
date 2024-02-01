@@ -19,7 +19,7 @@ class WatchSessionManager: NSObject, WCSessionDelegate {
             session.activate()
         }
     }
-    
+
     func sendMessage(_ message: [String: Any]) {
         guard WCSession.default.isReachable else {
             print("iPhone is not reachable.")

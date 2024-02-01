@@ -43,6 +43,9 @@ struct ContentView: View {
             WatchSessionManager.shared.sendMessage(message)
         } else {
             motionData.startUpdates()
+            // ここでiPhoneに送信開始のメッセージを送信します。
+            let message = ["recording": "started"]
+            WatchSessionManager.shared.sendMessage(message)
         }
         isRecording.toggle()
     }

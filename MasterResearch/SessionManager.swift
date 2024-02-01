@@ -37,8 +37,14 @@ class SessionManager: NSObject, ObservableObject, WCSessionDelegate {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             
+            // "Start Recording"メッセージをチェック
+            if let recording = message["recording"] as? String, recording == "started" {
+                // 配列をリセット
+                self.receivedDataArray.removeAll()
+            }
+            
             // 受信終了のメッセージをチェック
-            if let recording = message["recording"] as? String, recording == "stopped" {
+            else if let recording = message["recording"] as? String, recording == "stopped" {
                 // CSVファイル出力の確認ダイアログを表示
                 self.showExportConfirmation = true
             } else {
@@ -86,35 +92,50 @@ class SessionManager: NSObject, ObservableObject, WCSessionDelegate {
 
     // CSVファイルを出力するメソッド
     func exportDataToCSV(completion: @escaping (URL) -> Void) {
-        let fileName = "MotionData.csv"
-        guard let documentDirectoryPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
-            print("Document directory not found.")
-            return
-        }
-        let fileURL = documentDirectoryPath.appendingPathComponent(fileName)
+            // 日時をファイル名に含めるためのDateFormatterの設定
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyyMMdd_HHmmss"
+            let currentDateTimeString = dateFormatter.string(from: Date())
 
-        var csvText = "Timestamp,AccelerationX,AccelerationY,AccelerationZ,GyroX,GyroY,GyroZ\n"
-        
-        for dataDict in receivedDataArray {
-            let timestamp = dataDict["timestamp"] as? TimeInterval ?? 0
-            let accelerationX = dataDict["accelerationX"] as? Double ?? 0
-            let accelerationY = dataDict["accelerationY"] as? Double ?? 0
-            let accelerationZ = dataDict["accelerationZ"] as? Double ?? 0
-            let gyroX = dataDict["gyroX"] as? Double ?? 0
-            let gyroY = dataDict["gyroY"] as? Double ?? 0
-            let gyroZ = dataDict["gyroZ"] as? Double ?? 0
+            // ファイル名に現在の日時を追加
+            let fileName = "MotionData_\(currentDateTimeString).csv"
+            guard let documentDirectoryPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+                print("Document directory not found.")
+                return
+            }
+            let fileURL = documentDirectoryPath.appendingPathComponent(fileName)
+
+            // CSVのヘッダー
+            var csvText = "Timestamp,AccelerationX,AccelerationY,AccelerationZ,GyroX,GyroY,GyroZ\n"
             
-            let newRow = "\(timestamp),\(accelerationX),\(accelerationY),\(accelerationZ),\(gyroX),\(gyroY),\(gyroZ)\n"
-            csvText += newRow
+            // タイムスタンプをミリ秒まで含むフォーマットで表示
+            dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS"
+            
+            for dataDict in receivedDataArray {
+                let timestamp = dataDict["timestamp"] as? TimeInterval ?? 0
+                let date = Date(timeIntervalSince1970: timestamp)
+                let formattedDate = dateFormatter.string(from: date) // 日付をフォーマット
+                
+                let accelerationX = dataDict["accelerationX"] as? Double ?? 0
+                let accelerationY = dataDict["accelerationY"] as? Double ?? 0
+                let accelerationZ = dataDict["accelerationZ"] as? Double ?? 0
+                let gyroX = dataDict["gyroX"] as? Double ?? 0
+                let gyroY = dataDict["gyroY"] as? Double ?? 0
+                let gyroZ = dataDict["gyroZ"] as? Double ?? 0
+                
+                // CSVの各行のデータ
+                let newRow = "\(formattedDate),\(accelerationX),\(accelerationY),\(accelerationZ),\(gyroX),\(gyroY),\(gyroZ)\n"
+                csvText += newRow
+            }
+            
+            // CSVファイルの書き込み
+            do {
+                try csvText.write(to: fileURL, atomically: true, encoding: .utf8)
+                print("CSV file was successfully saved at: \(fileURL)")
+                completion(fileURL) // コールバックでファイルURLを返す
+            } catch {
+                print("Failed to create CSV file: \(error)")
+            }
         }
-        
-        do {
-            try csvText.write(to: fileURL, atomically: true, encoding: .utf8)
-            print("CSV file was successfully saved at: \(fileURL)")
-            completion(fileURL) // コールバックでファイルURLを返す
-        } catch {
-            print("Failed to create CSV file: \(error)")
-        }
-    }
 }
 
