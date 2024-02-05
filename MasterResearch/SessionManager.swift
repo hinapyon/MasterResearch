@@ -24,7 +24,7 @@ class SessionManager: NSObject, ObservableObject, WCSessionDelegate {
             session.activate()
         }
     }
-    
+
     func sessionDidBecomeInactive(_ session: WCSession) {
 
     }
@@ -36,13 +36,13 @@ class SessionManager: NSObject, ObservableObject, WCSessionDelegate {
     func session(_ session: WCSession, didReceiveMessage message: [String : Any]) {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            
+
             // "Start Recording"メッセージをチェック
             if let recording = message["recording"] as? String, recording == "started" {
                 // 配列をリセット
                 self.receivedDataArray.removeAll()
             }
-            
+
             // 受信終了のメッセージをチェック
             else if let recording = message["recording"] as? String, recording == "stopped" {
                 // CSVファイル出力の確認ダイアログを表示
@@ -54,7 +54,7 @@ class SessionManager: NSObject, ObservableObject, WCSessionDelegate {
             }
         }
     }
-    
+
     private func handleReceivedMessage(_ message: [String: Any]) {
         if let timestamp = message["timestamp"] as? TimeInterval,
            let accelerationX = message["accelerationX"] as? Double,
@@ -107,27 +107,27 @@ class SessionManager: NSObject, ObservableObject, WCSessionDelegate {
 
             // CSVのヘッダー
             var csvText = "Timestamp,AccelerationX,AccelerationY,AccelerationZ,GyroX,GyroY,GyroZ\n"
-            
+
             // タイムスタンプをミリ秒まで含むフォーマットで表示
             dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS"
-            
+
             for dataDict in receivedDataArray {
                 let timestamp = dataDict["timestamp"] as? TimeInterval ?? 0
                 let date = Date(timeIntervalSince1970: timestamp)
                 let formattedDate = dateFormatter.string(from: date) // 日付をフォーマット
-                
+
                 let accelerationX = dataDict["accelerationX"] as? Double ?? 0
                 let accelerationY = dataDict["accelerationY"] as? Double ?? 0
                 let accelerationZ = dataDict["accelerationZ"] as? Double ?? 0
                 let gyroX = dataDict["gyroX"] as? Double ?? 0
                 let gyroY = dataDict["gyroY"] as? Double ?? 0
                 let gyroZ = dataDict["gyroZ"] as? Double ?? 0
-                
+
                 // CSVの各行のデータ
                 let newRow = "\(formattedDate),\(accelerationX),\(accelerationY),\(accelerationZ),\(gyroX),\(gyroY),\(gyroZ)\n"
                 csvText += newRow
             }
-            
+
             // CSVファイルの書き込み
             do {
                 try csvText.write(to: fileURL, atomically: true, encoding: .utf8)
@@ -138,4 +138,3 @@ class SessionManager: NSObject, ObservableObject, WCSessionDelegate {
             }
         }
 }
-
