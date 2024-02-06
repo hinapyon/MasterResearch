@@ -24,7 +24,6 @@ xcuserdata
 *.xccheckout
 *.xcscmblueprint
 *.xcuserstate
-MasterResearch.xcodeproj
 
 # Swift Package Manager
 .build/
