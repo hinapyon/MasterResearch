@@ -15,9 +15,11 @@ struct ContentView: View {
 
     var body: some View {
         ScrollView {
-            Text(sessionManager.receivedDataText)
+            // MotionDataViewを使用して受信したデータを表示
+            MotionDataView(receivedDataText: sessionManager.receivedDataText)
                 .padding()
-                .multilineTextAlignment(.leading)
+            
+            // その他のUIコンポーネントがある場合はここに追加
         }
         .alert(isPresented: $sessionManager.showExportConfirmation) {
             Alert(

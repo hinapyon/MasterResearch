@@ -12,6 +12,7 @@ import SwiftUI
 class SessionManager: NSObject, ObservableObject, WCSessionDelegate {
     @Published var receivedDataText = "Waiting for data..."
     @Published var showExportConfirmation = false // CSV出力の確認ダイアログ表示フラグ
+    @Published var motionDataArray = [MotionData]() // 追加：モーションデータの配列
     static let shared = SessionManager()
     // 受信したデータを保存する配列
     var receivedDataArray: [[String: Any]] = []
