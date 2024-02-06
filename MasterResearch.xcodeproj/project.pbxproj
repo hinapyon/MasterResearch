@@ -20,6 +20,8 @@
 		1BDA4D1C2B69590B001BE7AC /* MotionDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDA4D1B2B69590B001BE7AC /* MotionDataManager.swift */; };
 		1BDA4D222B695F81001BE7AC /* SessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDA4D212B695F81001BE7AC /* SessionManager.swift */; };
 		1BDA4D242B695FDA001BE7AC /* ActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDA4D232B695FDA001BE7AC /* ActivityView.swift */; };
+		1BDA4D262B715136001BE7AC /* MotionDataView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDA4D252B715135001BE7AC /* MotionDataView.swift */; };
+		1BDA4D292B7156E5001BE7AC /* DataProcessing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDA4D282B7156E5001BE7AC /* DataProcessing.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -61,6 +63,8 @@
 		1BDA4D1B2B69590B001BE7AC /* MotionDataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionDataManager.swift; sourceTree = "<group>"; };
 		1BDA4D212B695F81001BE7AC /* SessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionManager.swift; sourceTree = "<group>"; };
 		1BDA4D232B695FDA001BE7AC /* ActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityView.swift; sourceTree = "<group>"; };
+		1BDA4D252B715135001BE7AC /* MotionDataView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionDataView.swift; sourceTree = "<group>"; };
+		1BDA4D282B7156E5001BE7AC /* DataProcessing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataProcessing.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -106,6 +110,8 @@
 				1B70DC3B2B553FD6003818EE /* ContentView.swift */,
 				1BDA4D212B695F81001BE7AC /* SessionManager.swift */,
 				1BDA4D232B695FDA001BE7AC /* ActivityView.swift */,
+				1BDA4D252B715135001BE7AC /* MotionDataView.swift */,
+				1BDA4D282B7156E5001BE7AC /* DataProcessing.swift */,
 				1B70DC3D2B553FD8003818EE /* Assets.xcassets */,
 				1B70DC3F2B553FD8003818EE /* Preview Content */,
 			);
@@ -159,6 +165,8 @@
 				1B70DC492B553FD8003818EE /* PBXTargetDependency */,
 			);
 			name = MasterResearch;
+			packageProductDependencies = (
+			);
 			productName = MasterResearch;
 			productReference = 1B70DC362B553FD6003818EE /* MasterResearch.app */;
 			productType = "com.apple.product-type.application";
@@ -207,6 +215,8 @@
 				Base,
 			);
 			mainGroup = 1B70DC2D2B553FD5003818EE;
+			packageReferences = (
+			);
 			productRefGroup = 1B70DC372B553FD6003818EE /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -243,9 +253,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1BDA4D262B715136001BE7AC /* MotionDataView.swift in Sources */,
 				1B9D9CBC2B657B16003D27C0 /* MasterResearchApp.swift in Sources */,
 				1BDA4D242B695FDA001BE7AC /* ActivityView.swift in Sources */,
 				1B70DC3C2B553FD6003818EE /* ContentView.swift in Sources */,
+				1BDA4D292B7156E5001BE7AC /* DataProcessing.swift in Sources */,
 				1BDA4D222B695F81001BE7AC /* SessionManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
