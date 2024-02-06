@@ -22,6 +22,8 @@
 		1BDA4D242B695FDA001BE7AC /* ActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDA4D232B695FDA001BE7AC /* ActivityView.swift */; };
 		1BDA4D262B715136001BE7AC /* MotionDataView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDA4D252B715135001BE7AC /* MotionDataView.swift */; };
 		1BDA4D292B7156E5001BE7AC /* DataProcessing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDA4D282B7156E5001BE7AC /* DataProcessing.swift */; };
+		1BDA4D2F2B724FED001BE7AC /* MotionData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDA4D2E2B724FEC001BE7AC /* MotionData.swift */; };
+		1BDA4D302B724FED001BE7AC /* MotionData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDA4D2E2B724FEC001BE7AC /* MotionData.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -65,6 +67,7 @@
 		1BDA4D232B695FDA001BE7AC /* ActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityView.swift; sourceTree = "<group>"; };
 		1BDA4D252B715135001BE7AC /* MotionDataView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionDataView.swift; sourceTree = "<group>"; };
 		1BDA4D282B7156E5001BE7AC /* DataProcessing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataProcessing.swift; sourceTree = "<group>"; };
+		1BDA4D2E2B724FEC001BE7AC /* MotionData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionData.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -88,6 +91,7 @@
 		1B70DC2D2B553FD5003818EE = {
 			isa = PBXGroup;
 			children = (
+				1BDA4D2E2B724FEC001BE7AC /* MotionData.swift */,
 				1B70DC382B553FD6003818EE /* MasterResearch */,
 				1B70DC4A2B553FD8003818EE /* MasterResearch Watch App */,
 				1B70DC372B553FD6003818EE /* Products */,
@@ -253,6 +257,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1BDA4D2F2B724FED001BE7AC /* MotionData.swift in Sources */,
 				1BDA4D262B715136001BE7AC /* MotionDataView.swift in Sources */,
 				1B9D9CBC2B657B16003D27C0 /* MasterResearchApp.swift in Sources */,
 				1BDA4D242B695FDA001BE7AC /* ActivityView.swift in Sources */,
@@ -270,6 +275,7 @@
 				1BDA4D1C2B69590B001BE7AC /* MotionDataManager.swift in Sources */,
 				1B70DC4E2B553FD8003818EE /* ContentView.swift in Sources */,
 				1B70DC4C2B553FD8003818EE /* MasterResearchApp.swift in Sources */,
+				1BDA4D302B724FED001BE7AC /* MotionData.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

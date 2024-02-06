@@ -18,7 +18,7 @@ struct ContentView: View {
             // MotionDataViewを使用して受信したデータを表示
             MotionDataView(receivedDataText: sessionManager.receivedDataText)
                 .padding()
-            
+
             // その他のUIコンポーネントがある場合はここに追加
         }
         .alert(isPresented: $sessionManager.showExportConfirmation) {

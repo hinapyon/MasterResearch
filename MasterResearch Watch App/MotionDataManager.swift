@@ -39,17 +39,23 @@ class MotionDataManager: ObservableObject {
         gyroText = String(format: "X: %.2f, Y: %.2f, Z: %.2f", gyro.x, gyro.y, gyro.z)
 
         // iPhoneにデータを送信
-        let timestamp = Date().timeIntervalSince1970
-        let data: [String: Any] = [
-            "timestamp": timestamp,
-            "accelerationX": acceleration.x,
-            "accelerationY": acceleration.y,
-            "accelerationZ": acceleration.z,
-            "gyroX": gyro.x,
-            "gyroY": gyro.y,
-            "gyroZ": gyro.z
-        ]
+        let motionData = MotionData(
+                timestamp: Date().timeIntervalSince1970,
+                accelerationX: acceleration.x,
+                accelerationY: acceleration.y,
+                accelerationZ: acceleration.z,
+                gyroX: gyro.x,
+                gyroY: gyro.y,
+                gyroZ: gyro.z
+            )
 
-        WatchSessionManager.shared.sendMessage(data)
+            // MotionData構造体をJSONにエンコード
+            guard let encodedData = try? JSONEncoder().encode(motionData),
+                  let jsonData = try? JSONSerialization.jsonObject(with: encodedData) as? [String: Any] else {
+                print("Error: Unable to encode MotionData")
+                return
+            }
+
+        WatchSessionManager.shared.sendMessage(jsonData)
     }
 }
