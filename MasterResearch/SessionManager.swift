@@ -15,7 +15,6 @@ class SessionManager: NSObject, ObservableObject, WCSessionDelegate {
     static let shared = SessionManager()
     // 受信したデータを保存する配列
     var receivedDataArray: [[String: Any]] = []
-    @Published var motionDataArray: [MotionData] = []
 
 
     override init() {
