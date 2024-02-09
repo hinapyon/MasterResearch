@@ -18,6 +18,10 @@ struct ContentView: View {
             // MotionDataViewを使用して受信したデータを表示
             MotionDataView(receivedDataText: sessionManager.receivedDataText)
                 .padding()
+            
+            // MotionDataGraphViewを使用して受信したデータを表示
+            MotionDataGraphView(motionDataArray: sessionManager.receivedMotionDataArray)
+                .padding()
 
             // その他のUIコンポーネントがある場合はここに追加
         }

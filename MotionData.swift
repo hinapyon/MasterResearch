@@ -8,7 +8,7 @@
 import Foundation
 
 // モーションデータを表す構造体
-struct MotionData: Codable {
+struct MotionData: Identifiable, Codable {
     let timestamp: TimeInterval
     let accelerationX: Double
     let accelerationY: Double

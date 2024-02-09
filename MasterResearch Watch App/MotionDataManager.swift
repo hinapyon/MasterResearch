@@ -51,7 +51,7 @@ class MotionDataManager: ObservableObject {
 
             // MotionData構造体をJSONにエンコード
             guard let encodedData = try? JSONEncoder().encode(motionData),
-                  let jsonData = try? JSONSerialization.jsonObject(with: encodedData) as? [String: Any] else {
+                let jsonData = try? JSONSerialization.jsonObject(with: encodedData) as? [String: Any] else {
                 print("Error: Unable to encode MotionData")
                 return
             }
