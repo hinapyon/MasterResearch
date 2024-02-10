@@ -21,7 +21,7 @@ struct MotionDataView: View {
 
 struct MotionDataGraphView: View {
     var motionDataArray: [MotionData]
-    
+
     private var startTime: TimeInterval {
         motionDataArray.first?.timestamp ?? 0
     }
@@ -87,19 +87,19 @@ struct MotionDataGraphView: View {
                                 y: .value("Gyro X", data.gyroX),
                                 series: .value("Series", "Gyro X")
                             )
-                            .foregroundStyle(.yellow)
+                            .foregroundStyle(.red)
                             LineMark(
                                 x: .value("Time", data.timestamp - startTime),
                                 y: .value("Gyro Y", data.gyroY),
                                 series: .value("Series", "Gyro Y")
                             )
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(.green)
                             LineMark(
                                 x: .value("Time", data.timestamp - startTime),
                                 y: .value("Gyro Z", data.gyroZ),
                                 series: .value("Series", "Gyro Z")
                             )
-                            .foregroundStyle(.purple)
+                            .foregroundStyle(.blue)
                         }
                     }
                     .chartYScale(domain: -20.0 ... 20.0) // Y軸の範囲を±20で固定
@@ -111,11 +111,11 @@ struct MotionDataGraphView: View {
 
                 // ジャイロスコープデータの凡例
                 HStack {
-                    Color.yellow.frame(width: 16, height: 16)
+                    Color.red.frame(width: 16, height: 16)
                     Text("X")
-                    Color.orange.frame(width: 16, height: 16)
+                    Color.green.frame(width: 16, height: 16)
                     Text("Y")
-                    Color.purple.frame(width: 16, height: 16)
+                    Color.blue.frame(width: 16, height: 16)
                     Text("Z")
                 }.padding()
             }
