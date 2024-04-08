@@ -12,7 +12,7 @@ class MotionDataManager: ObservableObject {
     private var motionManager = CMMotionManager()
     @Published var accelerationText = "X: 0.0, Y: 0.0, Z: 0.0"
     @Published var gyroText = "X: 0.0, Y: 0.0, Z: 0.0"
-    private let updateInterval = 1.0 // 1Hz
+    private let updateInterval = 0.02 // 50Hz
 
     var isDeviceMotionAvailable: Bool {
         motionManager.isDeviceMotionAvailable

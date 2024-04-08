@@ -15,3 +15,10 @@ struct MasterResearch_Watch_AppApp: App {
         }
     }
 }
+
+class ExtensionDelegate: NSObject, WKExtensionDelegate {
+    func applicationDidFinishLaunching() {
+        // アプリが起動したときに画面が消灯しないように設定
+        WKExtension.shared().isAutorotating = true
+    }
+}
