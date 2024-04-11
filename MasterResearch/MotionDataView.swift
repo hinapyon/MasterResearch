@@ -22,103 +22,91 @@ struct MotionDataView: View {
 struct MotionDataGraphView: View {
     var motionDataArray: [MotionData]
 
+    private var downsampledData: [MotionData] {
+        downsample(motionDataArray, to: 100) // 例: 100ポイントにダウンサンプリング
+    }
+
     private var startTime: TimeInterval {
-        motionDataArray.first?.timestamp ?? 0
+        downsampledData.first?.timestamp ?? 0
     }
 
     var body: some View {
-        ScrollView(.vertical) { // 縦方向のScrollViewを追加
+        ScrollView(.vertical) {
             VStack {
-                // 加速度データのグラフタイトルとグラフ
-                Text("Acceleration Data")
-                    .font(.headline)
-                    .padding()
-
-                ScrollView(.horizontal) { // 加速度データの横スクロール
-                    Chart {
-                        ForEach(motionDataArray, id: \.timestamp) { data in
-                            LineMark(
-                                x: .value("Time", data.timestamp - startTime),
-                                y: .value("Acceleration X", data.accelerationX),
-                                series: .value("Series", "Acceleration X")
-                            )
-                            .foregroundStyle(.red)
-                            LineMark(
-                                x: .value("Time", data.timestamp - startTime),
-                                y: .value("Acceleration Y", data.accelerationY),
-                                series: .value("Series", "Acceleration Y")
-                            )
-                            .foregroundStyle(.green)
-                            LineMark(
-                                x: .value("Time", data.timestamp - startTime),
-                                y: .value("Acceleration Z", data.accelerationZ),
-                                series: .value("Series", "Acceleration Z")
-                            )
-                            .foregroundStyle(.blue)
-                        }
-                    }
-                    .chartYScale(domain: -4.0 ... 4.0) // Y軸の範囲を±4で固定
-                    .chartYAxis {
-                        AxisMarks(preset: .extended, position: .leading)
-                    }
-                    .frame(width: max(UIScreen.main.bounds.width, CGFloat(motionDataArray.count) * 50), height: 250)
+                graphTitle("Acceleration Data")
+                scrollViewForGraph {
+                    lineChart(for: downsampledData, valueKeyPaths: (\MotionData.accelerationX, \MotionData.accelerationY, \MotionData.accelerationZ), colors: [.red, .green, .blue])
                 }
+                legend(["X", "Y", "Z"], colors: [.red, .green, .blue])
 
-                // 加速度データの凡例
-                HStack {
-                    Color.red.frame(width: 16, height: 16)
-                    Text("X")
-                    Color.green.frame(width: 16, height: 16)
-                    Text("Y")
-                    Color.blue.frame(width: 16, height: 16)
-                    Text("Z")
-                }.padding()
-
-                // ジャイロスコープデータのグラフタイトルとグラフ
-                Text("Gyroscope Data")
-                    .font(.headline)
-                    .padding()
-
-                ScrollView(.horizontal) { // ジャイロスコープデータの横スクロール
-                    Chart {
-                        ForEach(motionDataArray, id: \.timestamp) { data in
-                            LineMark(
-                                x: .value("Time", data.timestamp - startTime),
-                                y: .value("Gyro X", data.gyroX),
-                                series: .value("Series", "Gyro X")
-                            )
-                            .foregroundStyle(.red)
-                            LineMark(
-                                x: .value("Time", data.timestamp - startTime),
-                                y: .value("Gyro Y", data.gyroY),
-                                series: .value("Series", "Gyro Y")
-                            )
-                            .foregroundStyle(.green)
-                            LineMark(
-                                x: .value("Time", data.timestamp - startTime),
-                                y: .value("Gyro Z", data.gyroZ),
-                                series: .value("Series", "Gyro Z")
-                            )
-                            .foregroundStyle(.blue)
-                        }
-                    }
-                    .chartYScale(domain: -20.0 ... 20.0) // Y軸の範囲を±20で固定
-                    .chartYAxis { // Y軸のカスタマイズ
-                        AxisMarks(preset: .extended, position: .leading)
-                    }
-                    .frame(width: max(UIScreen.main.bounds.width, CGFloat(motionDataArray.count) * 50), height: 250)
+                graphTitle("Gyroscope Data")
+                scrollViewForGraph {
+                    lineChart(for: downsampledData, valueKeyPaths: (\MotionData.gyroX, \MotionData.gyroY, \MotionData.gyroZ), colors: [.red, .green, .blue])
                 }
-
-                // ジャイロスコープデータの凡例
-                HStack {
-                    Color.red.frame(width: 16, height: 16)
-                    Text("X")
-                    Color.green.frame(width: 16, height: 16)
-                    Text("Y")
-                    Color.blue.frame(width: 16, height: 16)
-                    Text("Z")
-                }.padding()
+                legend(["X", "Y", "Z"], colors: [.red, .green, .blue])
             }
         }
+    }
+
+    private func graphTitle(_ title: String) -> some View {
+        Text(title)
+            .font(.headline)
+            .padding()
+    }
+
+    private func scrollViewForGraph<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        ScrollView(.horizontal) {
+            content()
+                .frame(width: max(UIScreen.main.bounds.width, CGFloat(downsampledData.count) * 50), height: 250)
+        }
+    }
+
+    private func lineChart(for data: [MotionData], valueKeyPaths: (KeyPath<MotionData, Double>, KeyPath<MotionData, Double>, KeyPath<MotionData, Double>), colors: [Color]) -> some View {
+        Chart {
+            ForEach(data, id: \.timestamp) { dataPoint in
+                LineMark(
+                    x: .value("Time", dataPoint.timestamp - startTime),
+                    y: .value("Value 1", dataPoint[keyPath: valueKeyPaths.0]),
+                    series: .value("Series 1", "Value 1")
+                )
+                .foregroundStyle(colors[0])
+
+                LineMark(
+                    x: .value("Time", dataPoint.timestamp - startTime),
+                    y: .value("Value 2", dataPoint[keyPath: valueKeyPaths.1]),
+                    series: .value("Series 2", "Value 2")
+                )
+                .foregroundStyle(colors[1])
+
+                LineMark(
+                    x: .value("Time", dataPoint.timestamp - startTime),
+                    y: .value("Value 3", dataPoint[keyPath: valueKeyPaths.2]),
+                    series: .value("Series 3", "Value 3")
+                )
+                .foregroundStyle(colors[2])
+            }
+        }
+        .chartYScale(domain: -4.0 ... 4.0)
+        .chartYAxis {
+            AxisMarks(preset: .extended, position: .leading)
+        }
+    }
+
+    private func legend(_ labels: [String], colors: [Color]) -> some View {
+        HStack {
+            ForEach(Array(labels.enumerated()), id: \.offset) { index, label in
+                HStack {
+                    colors[index].frame(width: 16, height: 16)
+                    Text(label)
+                }
+            }
+        }
+        .padding()
+    }
+
+    private func downsample(_ data: [MotionData], to count: Int) -> [MotionData] {
+        // データのダウンサンプリングを行うロジック
+        let step = max(data.count / count, 1)
+        return stride(from: 0, to: data.count, by: step).map { data[$0] }
     }
 }

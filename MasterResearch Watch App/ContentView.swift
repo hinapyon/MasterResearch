@@ -16,10 +16,10 @@ struct ContentView: View {
         VStack {
             if motionData.isDeviceMotionAvailable {
                 Text("Acceleration")
-                Text(motionData.accelerationText)
+                Text("X: \(String(format: "%.2f", motionData.acceleration.x)), Y: \(String(format: "%.2f", motionData.acceleration.y)), Z: \(String(format: "%.2f", motionData.acceleration.z))")
                     .padding()
                 Text("Gyro")
-                Text(motionData.gyroText)
+                Text("X: \(String(format: "%.2f", motionData.gyro.x)), Y: \(String(format: "%.2f", motionData.gyro.y)), Z: \(String(format: "%.2f", motionData.gyro.z))")
                     .padding()
 
                 Button(action: toggleRecording) {

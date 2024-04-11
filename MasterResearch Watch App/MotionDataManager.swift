@@ -10,8 +10,8 @@ import CoreMotion
 
 class MotionDataManager: ObservableObject {
     private var motionManager = CMMotionManager()
-    @Published var accelerationText = "X: 0.0, Y: 0.0, Z: 0.0"
-    @Published var gyroText = "X: 0.0, Y: 0.0, Z: 0.0"
+    @Published var acceleration: (x: Double, y: Double, z: Double) = (0.0, 0.0, 0.0)
+    @Published var gyro: (x: Double, y: Double, z: Double) = (0.0, 0.0, 0.0)
     private let updateInterval = 0.02 // 50Hz
 
     var isDeviceMotionAvailable: Bool {
@@ -34,9 +34,9 @@ class MotionDataManager: ObservableObject {
 
     private func updateMotionData(_ motion: CMDeviceMotion) {
         let acceleration = motion.userAcceleration
-        accelerationText = String(format: "X: %.2f, Y: %.2f, Z: %.2f", acceleration.x, acceleration.y, acceleration.z)
+        self.acceleration = (acceleration.x, acceleration.y, acceleration.z)
         let gyro = motion.rotationRate
-        gyroText = String(format: "X: %.2f, Y: %.2f, Z: %.2f", gyro.x, gyro.y, gyro.z)
+        self.gyro = (gyro.x, gyro.y, gyro.z)
 
         // iPhoneにデータを送信
         let motionData = MotionData(

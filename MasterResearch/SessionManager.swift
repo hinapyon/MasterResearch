@@ -16,6 +16,19 @@ class SessionManager: NSObject, ObservableObject, WCSessionDelegate {
     // 受信したデータを保存する配列
     var receivedMotionDataArray: [MotionData] = []
 
+    // 日付フォーマッターの定義
+    let fileNameDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyyMMdd_HHmmss"
+        return formatter
+    }()
+
+    let csvDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS"
+        return formatter
+    }()
+
 
     override init() {
         super.init()
