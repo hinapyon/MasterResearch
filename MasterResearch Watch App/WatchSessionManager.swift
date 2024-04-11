@@ -13,7 +13,7 @@ class WatchSessionManager: NSObject, WCSessionDelegate {
 
     private var dataBuffer: [[String: Any]] = []
     private let bufferInterval = TimeInterval(1)  // バッファ1秒
-    
+
     override init() {
         super.init()
         if WCSession.isSupported() {
@@ -23,12 +23,12 @@ class WatchSessionManager: NSObject, WCSessionDelegate {
             startBufferTimer()
         }
     }
-    
+
     func sendMessage(_ message: [String: Any]) {
-         // メッセージをバッファに追加
-         dataBuffer.append(message)
-     }
-    
+        // メッセージをバッファに追加
+        dataBuffer.append(message)
+    }
+
     private func startBufferTimer() {
           Timer.scheduledTimer(withTimeInterval: bufferInterval, repeats: true) { [weak self] _ in
               self?.flushDataBuffer()

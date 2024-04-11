@@ -15,15 +15,18 @@ struct ContentView: View {
     var body: some View {
         VStack {
             if motionData.isDeviceMotionAvailable {
-                Text("Acceleration")
-                Text("X: \(String(format: "%.2f", motionData.acceleration.x)), Y: \(String(format: "%.2f", motionData.acceleration.y)), Z: \(String(format: "%.2f", motionData.acceleration.z))")
-                    .padding()
-                Text("Gyro")
-                Text("X: \(String(format: "%.2f", motionData.gyro.x)), Y: \(String(format: "%.2f", motionData.gyro.y)), Z: \(String(format: "%.2f", motionData.gyro.z))")
-                    .padding()
-
                 Button(action: toggleRecording) {
-                    Text(isRecording ? "Stop Recording" : "Start Recording")
+                    VStack {
+                        Image(systemName: isRecording ? "stop.circle" : "play.circle")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 80, height: 80) // アイコンのサイズを調整
+                            .foregroundColor(isRecording ? .red : .green)
+                        Text(isRecording ? "Stop Recording" : "Start Recording")
+                            .foregroundColor(isRecording ? .red : .green)
+                            .padding(.top, 8) // テキストとアイコンの間隔を設定
+                    }
+                    .padding() // ボタン全体のパディングを調整
                 }
             } else {
                 Text("Device Motion Not Available")
@@ -34,7 +37,7 @@ struct ContentView: View {
             self.isRecording = false
         }
     }
-
+    
     func toggleRecording() {
         if isRecording {
             motionData.stopUpdates()

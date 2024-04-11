@@ -12,6 +12,7 @@ import SwiftUI
 class SessionManager: NSObject, ObservableObject, WCSessionDelegate {
     @Published var receivedDataText = "Waiting for data..."
     @Published var showExportConfirmation = false // CSV出力の確認ダイアログ表示フラグ
+    @Published var isReceivingData = false   // 受信状態の追跡
     static let shared = SessionManager()
     // 受信したデータを保存する配列
     var receivedMotionDataArray: [MotionData] = []
@@ -55,12 +56,14 @@ class SessionManager: NSObject, ObservableObject, WCSessionDelegate {
             if let recording = message["recording"] as? String, recording == "started" {
                 // 配列をリセット
                 self.receivedMotionDataArray.removeAll()
+                self.isReceivingData = true
             }
 
             // 受信終了のメッセージをチェック
             else if let recording = message["recording"] as? String, recording == "stopped" {
                 // CSVファイル出力の確認ダイアログを表示
                 self.showExportConfirmation = true
+                self.isReceivingData = false
             } else {
                 // JSONメッセージをMotionDataにデコード
                 guard let jsonData = try? JSONSerialization.data(withJSONObject: message),

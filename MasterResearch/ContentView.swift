@@ -14,14 +14,30 @@ struct ContentView: View {
     @State private var fileURLToShare: URL? = nil
 
     var body: some View {
-        ScrollView {
-            // MotionDataViewを使用して受信したデータを表示
-            MotionDataView(receivedDataText: sessionManager.receivedDataText)
-                .padding()
+        VStack {
+            Spacer()
             
-            // MotionDataGraphViewを使用して受信したデータを表示
-            MotionDataGraphView(motionDataArray: sessionManager.receivedMotionDataArray)
-                .padding()
+            if sessionManager.isReceivingData {
+                VStack {
+                    ProgressView("受信中...")
+                        .progressViewStyle(CircularProgressViewStyle())
+                        .scaleEffect(1.5)
+                        .padding()
+                    Text("データを受信しています。完了するまでお待ちください。")
+                }
+            } else {
+                Text("受信を開始するには、Apple Watchのアプリで再生ボタンを押してください。")
+            }
+            
+            Spacer()
+            
+//            // MotionDataViewを使用して受信したデータを表示
+//            MotionDataView(receivedDataText: sessionManager.receivedDataText)
+//                .padding()
+//
+//            // MotionDataGraphViewを使用して受信したデータを表示
+//            MotionDataGraphView(motionDataArray: sessionManager.receivedMotionDataArray)
+//                .padding()
 
             // その他のUIコンポーネントがある場合はここに追加
         }
