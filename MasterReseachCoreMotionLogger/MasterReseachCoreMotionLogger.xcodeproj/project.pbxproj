@@ -1,0 +1,599 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		1B1C50DD2BE55473007B349D /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = 1B1C50DC2BE55473007B349D /* ZIPFoundation */; };
+		1B1C50DF2BE55567007B349D /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = 1B1C50DE2BE55567007B349D /* ZIPFoundation */; };
+		1B8B411D2BE3A49000BE76D3 /* DataFileViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B8B411C2BE3A48F00BE76D3 /* DataFileViews.swift */; };
+		1B8B411F2BE3B1E400BE76D3 /* WatchSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B8B411E2BE3B1E400BE76D3 /* WatchSessionManager.swift */; };
+		1B8B41262BE3BA5900BE76D3 /* SessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B8B41252BE3BA5900BE76D3 /* SessionManager.swift */; };
+		1B8B41282BE4179900BE76D3 /* FileShareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B8B41272BE4179900BE76D3 /* FileShareView.swift */; };
+		1BC277C42BE384C600C254D7 /* MasterReseachCoreMotionLoggerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BC277C32BE384C600C254D7 /* MasterReseachCoreMotionLoggerApp.swift */; };
+		1BC277C62BE384C600C254D7 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BC277C52BE384C600C254D7 /* ContentView.swift */; };
+		1BC277C82BE384CA00C254D7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1BC277C72BE384CA00C254D7 /* Assets.xcassets */; };
+		1BC277CB2BE384CA00C254D7 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1BC277CA2BE384CA00C254D7 /* Preview Assets.xcassets */; };
+		1BC277D12BE384CA00C254D7 /* MasterReseachCoreMotionLogger Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 1BC277D02BE384CA00C254D7 /* MasterReseachCoreMotionLogger Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		1BC277D62BE384CA00C254D7 /* MasterReseachCoreMotionLoggerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BC277D52BE384CA00C254D7 /* MasterReseachCoreMotionLoggerApp.swift */; };
+		1BC277D82BE384CA00C254D7 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BC277D72BE384CA00C254D7 /* ContentView.swift */; };
+		1BC277DA2BE384CC00C254D7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1BC277D92BE384CC00C254D7 /* Assets.xcassets */; };
+		1BC277DD2BE384CC00C254D7 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1BC277DC2BE384CC00C254D7 /* Preview Assets.xcassets */; };
+		1BC277E82BE3852B00C254D7 /* MotionData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BC277E72BE3852B00C254D7 /* MotionData.swift */; };
+		1BC277E92BE3852B00C254D7 /* MotionData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BC277E72BE3852B00C254D7 /* MotionData.swift */; };
+		1BC277EB2BE386E200C254D7 /* MotionDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BC277EA2BE386E200C254D7 /* MotionDataManager.swift */; };
+		1BC277EC2BE386E200C254D7 /* MotionDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BC277EA2BE386E200C254D7 /* MotionDataManager.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		1BC277D22BE384CA00C254D7 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1BC277B82BE384C500C254D7 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1BC277CF2BE384CA00C254D7;
+			remoteInfo = "MasterReseachCoreMotionLogger Watch App";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		1BC277E32BE384CC00C254D7 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				1BC277D12BE384CA00C254D7 /* MasterReseachCoreMotionLogger Watch App.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		1B8B411C2BE3A48F00BE76D3 /* DataFileViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataFileViews.swift; sourceTree = "<group>"; };
+		1B8B411E2BE3B1E400BE76D3 /* WatchSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchSessionManager.swift; sourceTree = "<group>"; };
+		1B8B41252BE3BA5900BE76D3 /* SessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionManager.swift; sourceTree = "<group>"; };
+		1B8B41272BE4179900BE76D3 /* FileShareView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileShareView.swift; sourceTree = "<group>"; };
+		1BC277C02BE384C600C254D7 /* MasterReseachCoreMotionLogger.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MasterReseachCoreMotionLogger.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1BC277C32BE384C600C254D7 /* MasterReseachCoreMotionLoggerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MasterReseachCoreMotionLoggerApp.swift; sourceTree = "<group>"; };
+		1BC277C52BE384C600C254D7 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		1BC277C72BE384CA00C254D7 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		1BC277CA2BE384CA00C254D7 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		1BC277D02BE384CA00C254D7 /* MasterReseachCoreMotionLogger Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "MasterReseachCoreMotionLogger Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		1BC277D52BE384CA00C254D7 /* MasterReseachCoreMotionLoggerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MasterReseachCoreMotionLoggerApp.swift; sourceTree = "<group>"; };
+		1BC277D72BE384CA00C254D7 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		1BC277D92BE384CC00C254D7 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		1BC277DC2BE384CC00C254D7 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		1BC277E72BE3852B00C254D7 /* MotionData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionData.swift; sourceTree = "<group>"; };
+		1BC277EA2BE386E200C254D7 /* MotionDataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionDataManager.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		1BC277BD2BE384C600C254D7 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1B1C50DD2BE55473007B349D /* ZIPFoundation in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1BC277CD2BE384CA00C254D7 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1B1C50DF2BE55567007B349D /* ZIPFoundation in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		1BC277B72BE384C500C254D7 = {
+			isa = PBXGroup;
+			children = (
+				1BC277E72BE3852B00C254D7 /* MotionData.swift */,
+				1BC277C22BE384C600C254D7 /* MasterReseachCoreMotionLogger */,
+				1BC277D42BE384CA00C254D7 /* MasterReseachCoreMotionLogger Watch App */,
+				1BC277C12BE384C600C254D7 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		1BC277C12BE384C600C254D7 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				1BC277C02BE384C600C254D7 /* MasterReseachCoreMotionLogger.app */,
+				1BC277D02BE384CA00C254D7 /* MasterReseachCoreMotionLogger Watch App.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		1BC277C22BE384C600C254D7 /* MasterReseachCoreMotionLogger */ = {
+			isa = PBXGroup;
+			children = (
+				1BC277C32BE384C600C254D7 /* MasterReseachCoreMotionLoggerApp.swift */,
+				1BC277C52BE384C600C254D7 /* ContentView.swift */,
+				1B8B41252BE3BA5900BE76D3 /* SessionManager.swift */,
+				1B8B41272BE4179900BE76D3 /* FileShareView.swift */,
+				1BC277C72BE384CA00C254D7 /* Assets.xcassets */,
+				1BC277C92BE384CA00C254D7 /* Preview Content */,
+			);
+			path = MasterReseachCoreMotionLogger;
+			sourceTree = "<group>";
+		};
+		1BC277C92BE384CA00C254D7 /* Preview Content */ = {
+			isa = PBXGroup;
+			children = (
+				1BC277CA2BE384CA00C254D7 /* Preview Assets.xcassets */,
+			);
+			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		1BC277D42BE384CA00C254D7 /* MasterReseachCoreMotionLogger Watch App */ = {
+			isa = PBXGroup;
+			children = (
+				1BC277D52BE384CA00C254D7 /* MasterReseachCoreMotionLoggerApp.swift */,
+				1BC277D72BE384CA00C254D7 /* ContentView.swift */,
+				1B8B411C2BE3A48F00BE76D3 /* DataFileViews.swift */,
+				1BC277EA2BE386E200C254D7 /* MotionDataManager.swift */,
+				1B8B411E2BE3B1E400BE76D3 /* WatchSessionManager.swift */,
+				1BC277D92BE384CC00C254D7 /* Assets.xcassets */,
+				1BC277DB2BE384CC00C254D7 /* Preview Content */,
+			);
+			path = "MasterReseachCoreMotionLogger Watch App";
+			sourceTree = "<group>";
+		};
+		1BC277DB2BE384CC00C254D7 /* Preview Content */ = {
+			isa = PBXGroup;
+			children = (
+				1BC277DC2BE384CC00C254D7 /* Preview Assets.xcassets */,
+			);
+			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		1BC277BF2BE384C600C254D7 /* MasterReseachCoreMotionLogger */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1BC277E42BE384CC00C254D7 /* Build configuration list for PBXNativeTarget "MasterReseachCoreMotionLogger" */;
+			buildPhases = (
+				1BC277BC2BE384C600C254D7 /* Sources */,
+				1BC277BD2BE384C600C254D7 /* Frameworks */,
+				1BC277BE2BE384C600C254D7 /* Resources */,
+				1BC277E32BE384CC00C254D7 /* Embed Watch Content */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				1BC277D32BE384CA00C254D7 /* PBXTargetDependency */,
+			);
+			name = MasterReseachCoreMotionLogger;
+			packageProductDependencies = (
+				1B1C50DC2BE55473007B349D /* ZIPFoundation */,
+			);
+			productName = MasterReseachCoreMotionLogger;
+			productReference = 1BC277C02BE384C600C254D7 /* MasterReseachCoreMotionLogger.app */;
+			productType = "com.apple.product-type.application";
+		};
+		1BC277CF2BE384CA00C254D7 /* MasterReseachCoreMotionLogger Watch App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1BC277E02BE384CC00C254D7 /* Build configuration list for PBXNativeTarget "MasterReseachCoreMotionLogger Watch App" */;
+			buildPhases = (
+				1BC277CC2BE384CA00C254D7 /* Sources */,
+				1BC277CD2BE384CA00C254D7 /* Frameworks */,
+				1BC277CE2BE384CA00C254D7 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "MasterReseachCoreMotionLogger Watch App";
+			packageProductDependencies = (
+				1B1C50DE2BE55567007B349D /* ZIPFoundation */,
+			);
+			productName = "MasterReseachCoreMotionLogger Watch App";
+			productReference = 1BC277D02BE384CA00C254D7 /* MasterReseachCoreMotionLogger Watch App.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		1BC277B82BE384C500C254D7 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1530;
+				LastUpgradeCheck = 1530;
+				TargetAttributes = {
+					1BC277BF2BE384C600C254D7 = {
+						CreatedOnToolsVersion = 15.3;
+					};
+					1BC277CF2BE384CA00C254D7 = {
+						CreatedOnToolsVersion = 15.3;
+					};
+				};
+			};
+			buildConfigurationList = 1BC277BB2BE384C500C254D7 /* Build configuration list for PBXProject "MasterReseachCoreMotionLogger" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 1BC277B72BE384C500C254D7;
+			packageReferences = (
+				1B1C50DB2BE55472007B349D /* XCRemoteSwiftPackageReference "ZIPFoundation" */,
+			);
+			productRefGroup = 1BC277C12BE384C600C254D7 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				1BC277BF2BE384C600C254D7 /* MasterReseachCoreMotionLogger */,
+				1BC277CF2BE384CA00C254D7 /* MasterReseachCoreMotionLogger Watch App */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		1BC277BE2BE384C600C254D7 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1BC277CB2BE384CA00C254D7 /* Preview Assets.xcassets in Resources */,
+				1BC277C82BE384CA00C254D7 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1BC277CE2BE384CA00C254D7 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1BC277DD2BE384CC00C254D7 /* Preview Assets.xcassets in Resources */,
+				1BC277DA2BE384CC00C254D7 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		1BC277BC2BE384C600C254D7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1B8B41282BE4179900BE76D3 /* FileShareView.swift in Sources */,
+				1BC277C62BE384C600C254D7 /* ContentView.swift in Sources */,
+				1BC277EB2BE386E200C254D7 /* MotionDataManager.swift in Sources */,
+				1BC277E82BE3852B00C254D7 /* MotionData.swift in Sources */,
+				1B8B41262BE3BA5900BE76D3 /* SessionManager.swift in Sources */,
+				1BC277C42BE384C600C254D7 /* MasterReseachCoreMotionLoggerApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1BC277CC2BE384CA00C254D7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1B8B411F2BE3B1E400BE76D3 /* WatchSessionManager.swift in Sources */,
+				1BC277D82BE384CA00C254D7 /* ContentView.swift in Sources */,
+				1B8B411D2BE3A49000BE76D3 /* DataFileViews.swift in Sources */,
+				1BC277EC2BE386E200C254D7 /* MotionDataManager.swift in Sources */,
+				1BC277E92BE3852B00C254D7 /* MotionData.swift in Sources */,
+				1BC277D62BE384CA00C254D7 /* MasterReseachCoreMotionLoggerApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		1BC277D32BE384CA00C254D7 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1BC277CF2BE384CA00C254D7 /* MasterReseachCoreMotionLogger Watch App */;
+			targetProxy = 1BC277D22BE384CA00C254D7 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		1BC277DE2BE384CC00C254D7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		1BC277DF2BE384CC00C254D7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		1BC277E12BE384CC00C254D7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"MasterReseachCoreMotionLogger Watch App/Preview Content\"";
+				DEVELOPMENT_TEAM = ARDLB57S76;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = MasterReseachCoreMotionLogger;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = hinapyon.MasterReseachCoreMotionLogger;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = hinapyon.MasterReseachCoreMotionLogger.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.4;
+			};
+			name = Debug;
+		};
+		1BC277E22BE384CC00C254D7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"MasterReseachCoreMotionLogger Watch App/Preview Content\"";
+				DEVELOPMENT_TEAM = ARDLB57S76;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = MasterReseachCoreMotionLogger;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = hinapyon.MasterReseachCoreMotionLogger;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = hinapyon.MasterReseachCoreMotionLogger.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 10.4;
+			};
+			name = Release;
+		};
+		1BC277E52BE384CC00C254D7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"MasterReseachCoreMotionLogger/Preview Content\"";
+				DEVELOPMENT_TEAM = ARDLB57S76;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = MasterReseachCoreMotionLogger;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = hinapyon.MasterReseachCoreMotionLogger;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		1BC277E62BE384CC00C254D7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"MasterReseachCoreMotionLogger/Preview Content\"";
+				DEVELOPMENT_TEAM = ARDLB57S76;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = MasterReseachCoreMotionLogger;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = hinapyon.MasterReseachCoreMotionLogger;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1BC277BB2BE384C500C254D7 /* Build configuration list for PBXProject "MasterReseachCoreMotionLogger" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1BC277DE2BE384CC00C254D7 /* Debug */,
+				1BC277DF2BE384CC00C254D7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1BC277E02BE384CC00C254D7 /* Build configuration list for PBXNativeTarget "MasterReseachCoreMotionLogger Watch App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1BC277E12BE384CC00C254D7 /* Debug */,
+				1BC277E22BE384CC00C254D7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1BC277E42BE384CC00C254D7 /* Build configuration list for PBXNativeTarget "MasterReseachCoreMotionLogger" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1BC277E52BE384CC00C254D7 /* Debug */,
+				1BC277E62BE384CC00C254D7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		1B1C50DB2BE55472007B349D /* XCRemoteSwiftPackageReference "ZIPFoundation" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/weichsel/ZIPFoundation.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.9.19;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		1B1C50DC2BE55473007B349D /* ZIPFoundation */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1B1C50DB2BE55472007B349D /* XCRemoteSwiftPackageReference "ZIPFoundation" */;
+			productName = ZIPFoundation;
+		};
+		1B1C50DE2BE55567007B349D /* ZIPFoundation */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1B1C50DB2BE55472007B349D /* XCRemoteSwiftPackageReference "ZIPFoundation" */;
+			productName = ZIPFoundation;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 1BC277B82BE384C500C254D7 /* Project object */;
+}
