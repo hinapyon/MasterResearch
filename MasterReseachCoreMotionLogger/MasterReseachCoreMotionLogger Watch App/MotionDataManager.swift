@@ -8,6 +8,7 @@ class MotionDataManager: ObservableObject {
     private var backupBuffer: [MotionData] = []
     private var isUsingCurrentBuffer = true
     private var sessionStartTime: Date?
+    private let saveQueue = DispatchQueue(label: "com.example.SaveMotionDataQueue", qos: .background)
 
     @Published var acceleration: (x: Double, y: Double, z: Double) = (0.0, 0.0, 0.0)
     @Published var gyro: (x: Double, y: Double, z: Double) = (0.0, 0.0, 0.0)
@@ -67,7 +68,7 @@ class MotionDataManager: ObservableObject {
         backupBuffer = bufferToSave
         isUsingCurrentBuffer = !isUsingCurrentBuffer
 
-        DispatchQueue.global(qos: .background).async {
+        saveQueue.async {
             self.saveData(buffer: bufferToSave)
             DispatchQueue.main.async {
                 bufferToSave.removeAll()
@@ -86,7 +87,7 @@ class MotionDataManager: ObservableObject {
             print("Failed to save data: \(error)")
         }
     }
-
+    
     private func createNewSessionFile() -> URL? {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyyMMdd_HHmmss"
