@@ -2,10 +2,6 @@ import Foundation
 import WatchConnectivity
 import SwiftUI
 
-import Foundation
-import WatchConnectivity
-import SwiftUI
-
 class SessionManager: NSObject, ObservableObject, WCSessionDelegate {
     static let shared = SessionManager()
     @Published var receivedFiles: [URL] = []

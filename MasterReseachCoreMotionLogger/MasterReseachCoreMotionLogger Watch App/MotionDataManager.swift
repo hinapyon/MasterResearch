@@ -4,11 +4,10 @@ import CoreMotion
 class MotionDataManager: ObservableObject {
     private var motionManager = CMMotionManager()
     private let updateInterval = 0.02 // 50Hz
-    private var currentBuffer: [MotionData] = []
-    private var backupBuffer: [MotionData] = []
-    private var isUsingCurrentBuffer = true
-    private var sessionStartTime: Date?
+    private var motionBuffer: [MotionData] = []
+    private let bufferQueue = DispatchQueue(label: "com.example.MotionBufferQueue", attributes: .concurrent)
     private let saveQueue = DispatchQueue(label: "com.example.SaveMotionDataQueue", qos: .background)
+    private var sessionStartTime: Date?
 
     @Published var acceleration: (x: Double, y: Double, z: Double) = (0.0, 0.0, 0.0)
     @Published var gyro: (x: Double, y: Double, z: Double) = (0.0, 0.0, 0.0)
@@ -20,24 +19,25 @@ class MotionDataManager: ObservableObject {
     func startUpdates() {
         if motionManager.isDeviceMotionAvailable {
             motionManager.deviceMotionUpdateInterval = updateInterval
-            sessionStartTime = Date() // セッション開始時の時刻を記録
+            sessionStartTime = Date()
             let backgroundQueue = OperationQueue()
             backgroundQueue.qualityOfService = .userInitiated
             motionManager.startDeviceMotionUpdates(to: backgroundQueue) { [weak self] (motionData, error) in
                 guard let self = self, let motion = motionData else { return }
-                self.updateMotionData(motion)
+                self.bufferQueue.async(flags: .barrier) {
+                    self.updateMotionData(motion)
+                }
             }
         }
     }
 
     func stopUpdates() {
         motionManager.stopDeviceMotionUpdates()
-        let bufferToSave = isUsingCurrentBuffer ? currentBuffer : backupBuffer
-        saveData(buffer: bufferToSave)
-        if isUsingCurrentBuffer {
-            currentBuffer.removeAll()
-        } else {
-            backupBuffer.removeAll()
+        saveQueue.async {
+            self.saveData(buffer: self.motionBuffer)
+            DispatchQueue.main.async {
+                self.motionBuffer.removeAll()
+            }
         }
     }
 
@@ -51,33 +51,11 @@ class MotionDataManager: ObservableObject {
             gyroY: motion.rotationRate.y,
             gyroZ: motion.rotationRate.z
         )
-
-        if isUsingCurrentBuffer {
-            currentBuffer.append(motionData)
-            if currentBuffer.count > 1000 {
-                swapBuffers()
-            }
-        } else {
-            backupBuffer.append(motionData)
-        }
-    }
-
-    private func swapBuffers() {
-        var bufferToSave = currentBuffer
-        currentBuffer = backupBuffer
-        backupBuffer = bufferToSave
-        isUsingCurrentBuffer = !isUsingCurrentBuffer
-
-        saveQueue.async {
-            self.saveData(buffer: bufferToSave)
-            DispatchQueue.main.async {
-                bufferToSave.removeAll()
-            }
-        }
+        motionBuffer.append(motionData)
     }
 
     private func saveData(buffer: [MotionData]) {
-        guard let url = createNewSessionFile() else { return }
+        guard let url = createNewSessionFile(), !buffer.isEmpty else { return }
         let encoder = JSONEncoder()
         do {
             let data = try encoder.encode(buffer)
@@ -87,7 +65,7 @@ class MotionDataManager: ObservableObject {
             print("Failed to save data: \(error)")
         }
     }
-    
+
     private func createNewSessionFile() -> URL? {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyyMMdd_HHmmss"

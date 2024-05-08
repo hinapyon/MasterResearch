@@ -47,7 +47,9 @@ struct ContentView: View {
         } else {
             motionData.startUpdates()
         }
-        isRecording.toggle()
+        DispatchQueue.main.async {
+            isRecording.toggle()
+        }
     }
 }
 
