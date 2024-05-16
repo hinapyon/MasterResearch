@@ -21,7 +21,7 @@ class MotionDataManager: ObservableObject {
             motionManager.deviceMotionUpdateInterval = updateInterval
             sessionStartTime = Date()
             let backgroundQueue = OperationQueue()
-            backgroundQueue.qualityOfService = .userInitiated
+            backgroundQueue.qualityOfService = .userInteractive
             motionManager.startDeviceMotionUpdates(to: backgroundQueue) { [weak self] (motionData, error) in
                 guard let self = self, let motion = motionData else { return }
                 self.bufferQueue.async(flags: .barrier) {
