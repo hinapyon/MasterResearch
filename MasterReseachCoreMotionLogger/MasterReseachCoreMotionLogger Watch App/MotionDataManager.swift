@@ -8,39 +8,40 @@ class MotionDataManager: ObservableObject {
     private let bufferQueue = DispatchQueue(label: "com.example.MotionBufferQueue", attributes: .concurrent)
     private let saveQueue = DispatchQueue(label: "com.example.SaveMotionDataQueue", qos: .background)
     private var sessionStartTime: Date?
-
+    
     @Published var acceleration: (x: Double, y: Double, z: Double) = (0.0, 0.0, 0.0)
     @Published var gyro: (x: Double, y: Double, z: Double) = (0.0, 0.0, 0.0)
-
+    
     var isDeviceMotionAvailable: Bool {
         motionManager.isDeviceMotionAvailable
     }
-
+    
     func startUpdates() {
-        if motionManager.isDeviceMotionAvailable {
-            motionManager.deviceMotionUpdateInterval = updateInterval
-            sessionStartTime = Date()
-            let backgroundQueue = OperationQueue()
-            backgroundQueue.qualityOfService = .userInteractive
-            motionManager.startDeviceMotionUpdates(to: backgroundQueue) { [weak self] (motionData, error) in
-                guard let self = self, let motion = motionData else { return }
-                self.bufferQueue.async(flags: .barrier) {
-                    self.updateMotionData(motion)
-                }
+        guard motionManager.isDeviceMotionAvailable else { return }
+        motionManager.deviceMotionUpdateInterval = updateInterval
+        sessionStartTime = Date()
+        let backgroundQueue = OperationQueue()
+        backgroundQueue.qualityOfService = .userInteractive
+        
+        motionManager.startDeviceMotionUpdates(to: backgroundQueue) { [weak self] (motionData, error) in
+            guard let self = self, let motion = motionData else { return }
+            self.bufferQueue.async(flags: .barrier) {
+                self.updateMotionData(motion)
             }
         }
     }
-
+    
     func stopUpdates() {
         motionManager.stopDeviceMotionUpdates()
-        saveQueue.async {
+        saveQueue.async { [weak self] in
+            guard let self = self else { return }
             self.saveData(buffer: self.motionBuffer)
             DispatchQueue.main.async {
                 self.motionBuffer.removeAll()
             }
         }
     }
-
+    
     private func updateMotionData(_ motion: CMDeviceMotion) {
         let motionData = MotionData(
             timestamp: Date().timeIntervalSince1970,
@@ -51,9 +52,11 @@ class MotionDataManager: ObservableObject {
             gyroY: motion.rotationRate.y,
             gyroZ: motion.rotationRate.z
         )
-        motionBuffer.append(motionData)
+        bufferQueue.async(flags: .barrier) { [weak self] in
+            self?.motionBuffer.append(motionData)
+        }
     }
-
+    
     private func saveData(buffer: [MotionData]) {
         guard let url = createNewSessionFile(), !buffer.isEmpty else { return }
         let encoder = JSONEncoder()
@@ -65,7 +68,7 @@ class MotionDataManager: ObservableObject {
             print("Failed to save data: \(error)")
         }
     }
-
+    
     private func createNewSessionFile() -> URL? {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyyMMdd_HHmmss"
