@@ -72,7 +72,7 @@ def get_min(m0, m1, m2, i, j):
         else:
             return i - 1, j - 1, m2
 
-def spring(x, y, epsilon):
+def spring_kawano(x, y, epsilon):
     Tx = len(x)
     Ty = len(y)
 
@@ -122,11 +122,11 @@ def spring(x, y, epsilon):
             C[S <= imin] = 100000000
             yield np.array(path), dmin
 
-def plot_spring(data_x, data_y, timestamps, epsilon):
+def plot_spring_kawano(data_x, data_y, timestamps, epsilon):
     pathes = []
     times = []
 
-    for path, cost in spring(data_x, data_y, epsilon):
+    for path, cost in spring_kawano(data_x, data_y, epsilon):
         plt.figure(figsize=(72, 6))  # グラフを横長にする
 
         # マッチングパスをプロット
@@ -150,3 +150,51 @@ def plot_spring(data_x, data_y, timestamps, epsilon):
         pathes.append(path)
 
     return pathes, times
+
+def spring_ogawa(G, QG, Th):
+    d = np.zeros((len(G)+1, len(QG)+1)) # distance
+    s = np.zeros((len(G)+1, len(QG)+1), dtype=np.int32) # starting point of current distance calc.
+    for j in range(1, len(QG)+1):
+        d[0, j] = np.inf
+    for i in range(1, len(G)+1):
+        s[i, 0] = i-1
+
+    seg = []
+    d_min = np.inf
+    t_s = t_e = 0
+
+    for i in range(len(G)):
+        for j in range(len(QG)):
+            if d[i+1, j] <= d[i, j] and d[i+1, j] <= d[i, j+1]:
+                d_best = d[i+1, j]
+                s[i+1, j+1] = s[i+1, j]
+            elif d[i, j+1] <= d[i, j]:
+                d_best = d[i, j+1]
+                s[i+1, j+1] = s[i, j+1]
+            else:
+                d_best = d[i, j]
+                s[i+1, j+1] = s[i, j]
+
+            d[i+1, j+1] = np.abs(G[i] - QG[j]) + d_best
+
+        if d_min <= Th:
+            flag = 1
+            for j in range(len(QG)):
+                if d[i+1, j+1] >= d_min or s[i+1, j+1] > t_e:
+                    flag *= 1
+                else:
+                    flag *= 0
+            if flag == 1:
+                print("****")
+                seg.append([i, d_min, t_s, t_e])
+                d_min = np.inf
+                for j in range(len(QG)):
+                    if s[i+1, j+1] <= t_e:
+                        d[i+1, j+1] = np.inf
+
+        if d[i+1, -1] <= Th and d[i+1, -1] < d_min:
+            d_min = d[i+1, -1]
+            t_s = s[i+1, -1]
+            t_e = i
+
+    return seg
