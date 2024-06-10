@@ -198,3 +198,73 @@ def spring_ogawa(G, QG, Th):
             t_e = i
 
     return seg
+
+def combine_and_find_overlapping_segments(segx, segy, segz):
+    # Combine all segments
+    all_segments = []
+    for seg in [segx, segy, segz]:
+        for (i, d_min, t_s, t_e) in seg:
+            all_segments.append((t_s, t_e))
+
+    # Sort segments
+    all_segments.sort()
+
+    # Find overlapping segments
+    overlap_ranges = []
+    current_overlap = None
+    current_count = 0
+
+    for start, end in all_segments:
+        if current_overlap is None:
+            current_overlap = (start, end)
+            current_count = 1
+        else:
+            current_start, current_end = current_overlap
+            if start <= current_end:
+                current_overlap = (current_start, max(current_end, end))
+                current_count += 1
+            else:
+                if current_count >= 2:
+                    overlap_ranges.append(current_overlap)
+                current_overlap = (start, end)
+                current_count = 1
+
+    if current_count >= 2:
+        overlap_ranges.append(current_overlap)
+
+    return overlap_ranges
+
+def combine_and_find_all_overlapping_segments(segx, segy, segz):
+    # Combine all segments
+    all_segments = []
+    for seg in [segx, segy, segz]:
+        for (i, d_min, t_s, t_e) in seg:
+            all_segments.append((t_s, t_e))
+
+    # Sort segments
+    all_segments.sort()
+
+    # Find overlapping segments
+    overlap_ranges = []
+    current_overlap = None
+    current_count = 0
+
+    for start, end in all_segments:
+        if current_overlap is None:
+            current_overlap = (start, end)
+            current_count = 1
+        else:
+            current_start, current_end = current_overlap
+            if start <= current_end:
+                current_overlap = (current_start, max(current_end, end))
+                current_count += 1
+            else:
+                if current_count == 3:
+                    overlap_ranges.append(current_overlap)
+                current_overlap = (start, end)
+                current_count = 1
+
+    if current_count == 3:
+        overlap_ranges.append(current_overlap)
+
+    return overlap_ranges
