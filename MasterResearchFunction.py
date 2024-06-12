@@ -199,6 +199,23 @@ def spring_ogawa(G, QG, Th):
 
     return seg
 
+def three_axis_spring_ogawa(motion_data, train_data, Th, Type):
+    segx, segy, segz = [], [], []
+
+    if Type == 'acc':
+        for i in range(len(train_data)):
+            segx.append(spring_ogawa(motion_data['AccelerationX'], train_data[i]['AccelerationX']), Th)
+            segy.append(spring_ogawa(motion_data['AccelerationY'], train_data[i]['AccelerationY']), Th)
+            segz.append(spring_ogawa(motion_data['AccelerationZ'], train_data[i]['AccelerationZ']), Th)
+
+    elif Type == 'gyro':
+        for i in range(len(train_data)):
+            segx.append(spring_ogawa(motion_data['GyroX'], train_data[i]['GyroX']), Th)
+            segy.append(spring_ogawa(motion_data['GyroY'], train_data[i]['GyroY']), Th)
+            segz.append(spring_ogawa(motion_data['GyroZ'], train_data[i]['GyroZ']), Th)
+
+    return segx, segy, segz
+
 def combine_and_find_overlapping_segments(segx, segy, segz):
     # Combine all segments
     all_segments = []
@@ -234,37 +251,79 @@ def combine_and_find_overlapping_segments(segx, segy, segz):
 
     return overlap_ranges
 
-def combine_and_find_all_overlapping_segments(segx, segy, segz):
-    # Combine all segments
-    all_segments = []
-    for seg in [segx, segy, segz]:
-        for (i, d_min, t_s, t_e) in seg:
-            all_segments.append((t_s, t_e))
+# 各教師データの結果ごとにオーバーラップを検出
+def overlap_from_three_segments(segx, segy, segz):
+    overlap = []
+    for i in range(len(segx)):
+        overlap.append(combine_and_find_overlapping_segments(segx[i], segy[i], segz[i]))
+    return overlap
 
-    # Sort segments
-    all_segments.sort()
+# 各教師データの結果ごとに出したオーバーラップから、条件を満たさないセグメントを削除する関数
+def filter_overlap_by_elapsed_time(overlap, motion_data, min_time, max_time):
+    filtered_overlap = []
+    for segments in overlap:
+        temp = []
+        for start, end in segments:
+            start_time = motion_data['Timestamp'][start]
+            end_time = motion_data['Timestamp'][end]
+            elapsed_time = (end_time - start_time).total_seconds()
+            if min_time < elapsed_time < max_time:
+                temp.append((start, end))
+        if temp:  # フィルタリング後にデータが存在する場合のみ追加
+            filtered_overlap.append(temp)
+    return filtered_overlap
 
-    # Find overlapping segments
-    overlap_ranges = []
+#overlapの中からさらにコンバインするやつ
+def combine_all_overlaps(overlap):
+    # Combine all segments from multiple lists into one list
+    combined_segments = []
+    for segments in overlap:
+        combined_segments.extend(segments)
+
+    # Sort combined segments
+    combined_segments.sort()
+
+    # Find and merge overlapping segments
+    final_segments = []
     current_overlap = None
-    current_count = 0
 
-    for start, end in all_segments:
+    for start, end in combined_segments:
         if current_overlap is None:
             current_overlap = (start, end)
-            current_count = 1
         else:
             current_start, current_end = current_overlap
             if start <= current_end:
                 current_overlap = (current_start, max(current_end, end))
-                current_count += 1
             else:
-                if current_count == 3:
-                    overlap_ranges.append(current_overlap)
+                final_segments.append(current_overlap)
                 current_overlap = (start, end)
-                current_count = 1
 
-    if current_count == 3:
-        overlap_ranges.append(current_overlap)
+    if current_overlap is not None:
+        final_segments.append(current_overlap)
 
-    return overlap_ranges
+    return final_segments
+
+#検出された区間のタイムスタンプを出力するやつ
+def extract_timestamp_from_overlap(motion_data, combine_overlap):
+    results = []
+    for start, end in combine_overlap:
+        results.append([motion_data['Timestamp'][start], motion_data['Timestamp'][end]])
+    return results
+
+# 経過時間を算出して条件に合わないセグメントを削除する関数
+def filter_segments_by_time_length(results, min_time, max_time):
+    filtered_results = []
+    for start_time, end_time in results:
+        elapsed_time = (end_time - start_time).total_seconds()
+        if min_time < elapsed_time < max_time:
+            filtered_results.append([start_time, end_time])
+    return filtered_results
+
+# filtered_results の範囲内の eye_data['Timestamp'] を抽出する関数
+def extract_eye_data_within_intervals(filtered_results, eye_data):
+    extracted_eye_data = []
+    for start_time, end_time in filtered_results:
+        # タイムスタンプが範囲内のデータを抽出
+        extracted_eye_data.append(eye_data[(eye_data['Timestamp'] >= start_time) & (eye_data['Timestamp'] <= end_time)])
+
+    return extracted_eye_data
