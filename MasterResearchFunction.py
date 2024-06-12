@@ -204,15 +204,15 @@ def three_axis_spring_ogawa(motion_data, train_data, Th, Type):
 
     if Type == 'acc':
         for i in range(len(train_data)):
-            segx.append(spring_ogawa(motion_data['AccelerationX'], train_data[i]['AccelerationX']), Th)
-            segy.append(spring_ogawa(motion_data['AccelerationY'], train_data[i]['AccelerationY']), Th)
-            segz.append(spring_ogawa(motion_data['AccelerationZ'], train_data[i]['AccelerationZ']), Th)
+            segx.append(spring_ogawa(motion_data['AccelerationX'], train_data[i]['AccelerationX'], Th))
+            segy.append(spring_ogawa(motion_data['AccelerationY'], train_data[i]['AccelerationY'], Th))
+            segz.append(spring_ogawa(motion_data['AccelerationZ'], train_data[i]['AccelerationZ'], Th))
 
     elif Type == 'gyro':
         for i in range(len(train_data)):
-            segx.append(spring_ogawa(motion_data['GyroX'], train_data[i]['GyroX']), Th)
-            segy.append(spring_ogawa(motion_data['GyroY'], train_data[i]['GyroY']), Th)
-            segz.append(spring_ogawa(motion_data['GyroZ'], train_data[i]['GyroZ']), Th)
+            segx.append(spring_ogawa(motion_data['GyroX'], train_data[i]['GyroX'], Th))
+            segy.append(spring_ogawa(motion_data['GyroY'], train_data[i]['GyroY'], Th))
+            segz.append(spring_ogawa(motion_data['GyroZ'], train_data[i]['GyroZ'], Th))
 
     return segx, segy, segz
 
