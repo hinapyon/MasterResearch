@@ -7,27 +7,59 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import japanize_matplotlib
 
-#Apple Watchからのモーションデータを読み込む関数
 def process_apple_watch_csv(file_path):
+    """
+    Apple Watchからのモーションデータを読み込み、処理する関数
+
+    Parameters:
+    file_path (str): CSVファイルのパス
+
+    Returns:
+    pd.DataFrame: 処理されたモーションデータを含むデータフレーム
+    """
+
     # CSVファイルの読み込み
-    motion_data = pd.read_csv(file_path, header=0, names=['UnixTime', 'AccelerationX', 'AccelerationY', 'AccelerationZ', 'GyroX', 'GyroY', 'GyroZ'])
+    motion_data = pd.read_csv(file_path, header=0, names=[
+        'UnixTime', 'AccelerationX', 'AccelerationY', 'AccelerationZ',
+        'GyroX', 'GyroY', 'GyroZ'
+    ])
+
     # Unixタイムスタンプを日本時間に変換し、タイムゾーン情報を削除して表示する
-    motion_data['Timestamp'] = pd.to_datetime(motion_data['UnixTime'], unit='s').dt.tz_localize('UTC').dt.tz_convert('Asia/Tokyo').dt.tz_localize(None)
+    motion_data['Timestamp'] = (
+        pd.to_datetime(motion_data['UnixTime'], unit='s')
+        .dt.tz_localize('UTC')
+        .dt.tz_convert('Asia/Tokyo')
+        .dt.tz_localize(None)
+    )
+
     # 加速度のユークリッドノルムを計算してデータフレームに追加
-    motion_data['EuclideanNorm'] = np.sqrt(motion_data['AccelerationX']**2 + motion_data['AccelerationY']**2 + motion_data['AccelerationZ']**2)
-    #SG法を適用
-    # SGフィルタのパラメータ設定
+    motion_data['EuclideanNorm'] = np.sqrt(
+        motion_data['AccelerationX']**2 +
+        motion_data['AccelerationY']**2 +
+        motion_data['AccelerationZ']**2
+    )
+
+    # 角速度のユークリッドノルムを計算してデータフレームに追加
+    motion_data['EuclideanNormGyro'] = np.sqrt(
+        motion_data['GyroX']**2 +
+        motion_data['GyroY']**2 +
+        motion_data['GyroZ']**2
+    )
+
+    # Savitzky-Golayフィルタのパラメータ設定
     window_length = 11  # 窓の長さ（奇数、10サンプル以上）
-    polyorder = 2      # 多項式の次数（2次）
-    # SGフィルタを適用
-    motion_data['SG_AccelerationX'] = savgol_filter(motion_data['AccelerationX'], window_length, polyorder)
-    motion_data['SG_AccelerationY'] = savgol_filter(motion_data['AccelerationY'], window_length, polyorder)
-    motion_data['SG_AccelerationZ'] = savgol_filter(motion_data['AccelerationZ'], window_length, polyorder)
-    motion_data['SG_EuclideanNorm'] = savgol_filter(motion_data['EuclideanNorm'], window_length, polyorder)
+    polyorder = 2       # 多項式の次数（2次）
+
+    # Savitzky-Golayフィルタを適用
+    for axis in ['AccelerationX', 'AccelerationY', 'AccelerationZ', 'EuclideanNorm']:
+        motion_data[f'SG_{axis}'] = savgol_filter(motion_data[axis], window_length, polyorder)
+
     # FFTのサンプル数を取得
     N = len(motion_data)
+
     # サンプリングレートを定義 (50Hzとする)
     Fs = 50
+
     # FFT解析を行い、3軸加速度のパワースペクトルを計算してデータフレームに追加
     for axis in ['AccelerationX', 'AccelerationY', 'AccelerationZ', 'EuclideanNorm']:
         accel_fft = np.fft.fft(motion_data[axis])
@@ -37,25 +69,69 @@ def process_apple_watch_csv(file_path):
     return motion_data
 
 def process_all_apple_watch_csv_in_directory(directory):
+    """
+    指定されたディレクトリ内のすべてのApple WatchモーションデータCSVファイルを処理し、
+    データフレームのリストとして返す関数。
+
+    Parameters:
+    directory (str): CSVファイルが格納されているディレクトリのパス
+
+    Returns:
+    list of pd.DataFrame: 処理されたモーションデータを含むデータフレームのリスト
+    """
+
     dataframes = []
+
+    # 指定されたディレクトリ内のすべてのファイルをチェック
     for filename in os.listdir(directory):
+        # ファイルがCSVである場合のみ処理
         if filename.endswith('.csv'):
             file_path = os.path.join(directory, filename)
+            # CSVファイルを処理
             df = process_apple_watch_csv(file_path)
+            # 処理されたデータフレームをリストに追加
             dataframes.append(df)
+
     return dataframes
 
-#Tobii Pro Glasses 2からのアイトラッキングデータを読み込む関数
 def process_tobii_csv(file_path):
+    """
+    Tobii Pro Glasses 2からのアイトラッキングデータを読み込み、処理する関数
+
+    Parameters:
+    file_path (str): CSVファイルのパス
+
+    Returns:
+    pd.DataFrame: 処理されたアイトラッキングデータを含むデータフレーム
+    """
+
     # CSVファイルの読み込み
     eye_data = pd.read_csv(file_path, header=0)
-    #タイムスタンプをYYYY-MM-DD HH:MM:SS.fff形式に変換
+
+    # タイムスタンプをYYYY-MM-DD HH:MM:SS.fff形式に変換
     eye_data['Recording start time'] = pd.to_datetime(eye_data['Recording start time'], format='%H:%M:%S.%f')
     eye_data['Recording date'] = pd.to_datetime(eye_data['Recording date'], format='%Y/%m/%d')
     eye_data['Recording timestamp'] = pd.to_datetime(eye_data['Recording timestamp'], unit='us')
-    eye_data['Timestamp'] = eye_data['Recording date'] + pd.to_timedelta(eye_data['Recording start time'].dt.strftime('%H:%M:%S.%f')) + pd.to_timedelta(eye_data['Recording timestamp'].dt.strftime('%H:%M:%S.%f'))
 
-    return eye_data[(eye_data['Sensor'] == 'Eye Tracker')].drop(columns=['Recording timestamp', 'Computer timestamp', 'Recording start time UTC', 'Recording duration', 'Recording Fixation filter name', 'Project name', 'Export date', 'Recording name','Recording date', 'Recording date UTC', 'Recording start time', 'Recording media name', 'Recording media width', 'Recording media height'])
+    # 統合されたタイムスタンプを計算
+    eye_data['Timestamp'] = (
+        eye_data['Recording date'] +
+        pd.to_timedelta(eye_data['Recording start time'].dt.strftime('%H:%M:%S.%f')) +
+        pd.to_timedelta(eye_data['Recording timestamp'].dt.strftime('%H:%M:%S.%f'))
+    )
+
+    # 不要なカラムを削除し、'Eye Tracker'センサーのデータのみを抽出
+    processed_eye_data = eye_data[
+        eye_data['Sensor'] == 'Eye Tracker'
+    ].drop(columns=[
+        'Recording timestamp', 'Computer timestamp', 'Recording start time UTC',
+        'Recording duration', 'Recording Fixation filter name', 'Project name',
+        'Export date', 'Recording name', 'Recording date', 'Recording date UTC',
+        'Recording start time', 'Recording media name', 'Recording media width',
+        'Recording media height'
+    ])
+
+    return processed_eye_data
 
 def dist(x, y):
     return (x - y) ** 2
@@ -199,28 +275,85 @@ def spring_ogawa(G, QG, Th):
 
     return seg
 
-def three_axis_spring_ogawa(motion_data, train_data, Th, Type):
+def three_axis_spring_ogawa(motion_data, train_data, Th1, Th2, Th3, Type):
     segx, segy, segz = [], [], []
 
     if Type == 'acc':
         for i in range(len(train_data)):
-            segx.append(spring_ogawa(motion_data['AccelerationX'], train_data[i]['AccelerationX'], Th))
-            segy.append(spring_ogawa(motion_data['AccelerationY'], train_data[i]['AccelerationY'], Th))
-            segz.append(spring_ogawa(motion_data['AccelerationZ'], train_data[i]['AccelerationZ'], Th))
+            segx.append(spring_ogawa(motion_data['AccelerationX'], train_data[i]['AccelerationX'], Th1))
+            segy.append(spring_ogawa(motion_data['AccelerationY'], train_data[i]['AccelerationY'], Th2))
+            segz.append(spring_ogawa(motion_data['AccelerationZ'], train_data[i]['AccelerationZ'], Th3))
+
+    elif Type == 'sgacc':
+        for i in range(len(train_data)):
+            segx.append(spring_ogawa(motion_data['SG_AccelerationX'], train_data[i]['SG_AccelerationX'], Th1))
+            segy.append(spring_ogawa(motion_data['SG_AccelerationY'], train_data[i]['SG_AccelerationY'], Th2))
+            segz.append(spring_ogawa(motion_data['SG_AccelerationZ'], train_data[i]['SG_AccelerationZ'], Th3))
 
     elif Type == 'gyro':
         for i in range(len(train_data)):
-            segx.append(spring_ogawa(motion_data['GyroX'], train_data[i]['GyroX'], Th))
-            segy.append(spring_ogawa(motion_data['GyroY'], train_data[i]['GyroY'], Th))
-            segz.append(spring_ogawa(motion_data['GyroZ'], train_data[i]['GyroZ'], Th))
+            segx.append(spring_ogawa(motion_data['GyroX'], train_data[i]['GyroX'], Th1))
+            segy.append(spring_ogawa(motion_data['GyroY'], train_data[i]['GyroY'], Th2))
+            segz.append(spring_ogawa(motion_data['GyroZ'], train_data[i]['GyroZ'], Th3))
 
     return segx, segy, segz
 
+#各セグメントをフィルタリングする関数
+def filter_seg_by_elapsed_time(seg, motion_data, min_time, max_time):
+    filtered_seg = []
+    for segment in seg:  # 直接セグメントをイテレート
+        temp = []
+        for (l, d_min, t_s, t_e) in segment:
+            start_time = motion_data['Timestamp'][t_s]
+            end_time = motion_data['Timestamp'][t_e]
+            elapsed_time = (end_time - start_time).total_seconds()
+            if min_time < elapsed_time < max_time:
+                temp.append((t_s, t_e))
+        filtered_seg.append(temp)  # フィルタリング後にデータが存在しなくても空リストを追加
+    return filtered_seg
+
+#セグメントを統合
 def combine_and_find_overlapping_segments(segx, segy, segz):
     # Combine all segments
     all_segments = []
     for seg in [segx, segy, segz]:
         for (i, d_min, t_s, t_e) in seg:
+            all_segments.append((t_s, t_e))
+
+    # Sort segments
+    all_segments.sort()
+
+    # Find overlapping segments
+    overlap_ranges = []
+    current_overlap = None
+    current_count = 0
+
+    for start, end in all_segments:
+        if current_overlap is None:
+            current_overlap = (start, end)
+            current_count = 1
+        else:
+            current_start, current_end = current_overlap
+            if start <= current_end:
+                current_overlap = (current_start, max(current_end, end))
+                current_count += 1
+            else:
+                if current_count >= 2:
+                    overlap_ranges.append(current_overlap)
+                current_overlap = (start, end)
+                current_count = 1
+
+    if current_count >= 2:
+        overlap_ranges.append(current_overlap)
+
+    return overlap_ranges
+
+#フィルタリングされたセグメントを統合
+def combine_and_find_overlapping_filtered_segments(segx, segy, segz):
+    # Combine all segments
+    all_segments = []
+    for seg in [segx, segy, segz]:
+        for (t_s, t_e) in seg:
             all_segments.append((t_s, t_e))
 
     # Sort segments
@@ -327,3 +460,42 @@ def extract_eye_data_within_intervals(filtered_results, eye_data):
         extracted_eye_data.append(eye_data[(eye_data['Timestamp'] >= start_time) & (eye_data['Timestamp'] <= end_time)])
 
     return extracted_eye_data
+
+#視線データの移動距離の標準偏差でフィルタリング
+def filter_by_std_gaze(extracted_eye_data, filtered_results, threshold):
+    filtered_extracted_eye_data = []
+    filtered_filtered_results = []
+
+    for i in range(len(extracted_eye_data)):
+        diff_x = extracted_eye_data[i]['Gaze point X'].interpolate(method='linear').diff()
+        diff_y = extracted_eye_data[i]['Gaze point Y'].interpolate(method='linear').diff()
+        distance = np.sqrt(diff_x**2 + diff_y**2)  # ユークリッド距離
+        std = distance.std()  # ユークリッド距離の分散を計算
+        diff_r = extracted_eye_data[i]['Pupil diameter right'].interpolate(method='linear').diff()
+        diff_l = extracted_eye_data[i]['Pupil diameter left'].interpolate(method='linear').diff()
+        std_r = diff_r.std()  # ユークリッド距離の分
+        std_l = diff_l.std()  # ユークリッド距離の分
+        print(std, std_r, std_l)
+
+        if std < threshold:
+            filtered_extracted_eye_data.append(extracted_eye_data[i])
+            filtered_filtered_results.append(filtered_results[i])
+
+    return filtered_extracted_eye_data, filtered_filtered_results
+
+# 保存する変数を辞書にまとめる関数
+def create_data_dict(segment_type):
+    return {
+        f'a_yuuma_{segment_type}_segx': globals()[f'a_yuuma_{segment_type}_segx'],
+        f'a_yuuma_{segment_type}_segy': globals()[f'a_yuuma_{segment_type}_segy'],
+        f'a_yuuma_{segment_type}_segz': globals()[f'a_yuuma_{segment_type}_segz'],
+        f'b_sakamoto_{segment_type}_segx': globals()[f'b_sakamoto_{segment_type}_segx'],
+        f'b_sakamoto_{segment_type}_segy': globals()[f'b_sakamoto_{segment_type}_segy'],
+        f'b_sakamoto_{segment_type}_segz': globals()[f'b_sakamoto_{segment_type}_segz'],
+        f'c_watabe_{segment_type}_segx': globals()[f'c_watabe_{segment_type}_segx'],
+        f'c_watabe_{segment_type}_segy': globals()[f'c_watabe_{segment_type}_segy'],
+        f'c_watabe_{segment_type}_segz': globals()[f'c_watabe_{segment_type}_segz'],
+        f'd_nakazawa_{segment_type}_segx': globals()[f'd_nakazawa_{segment_type}_segx'],
+        f'd_nakazawa_{segment_type}_segy': globals()[f'd_nakazawa_{segment_type}_segy'],
+        f'd_nakazawa_{segment_type}_segz': globals()[f'd_nakazawa_{segment_type}_segz']
+    }
