@@ -436,6 +436,41 @@ def combine_all_overlaps(overlap):
 
     return final_segments
 
+def new_combine_all_overlaps(overlap):
+    # Combine all segments from multiple lists into one list
+    combined_segments = []
+    for segments in overlap:
+        combined_segments.extend(segments)
+
+    # Sort combined segments
+    combined_segments.sort()
+
+    # Find and merge overlapping segments
+    final_segments = []
+    current_overlap = None
+
+    for start, end in combined_segments:
+        if current_overlap is None:
+            current_overlap = (start, end)
+        else:
+            current_start, current_end = current_overlap
+            if start <= current_end:
+                # Check if the current segment is completely within the previous segment
+                if end <= current_end:
+                    continue
+                else:
+                    # Extend the current overlap segment
+                    current_overlap = (current_start, end)
+            else:
+                # If there is no overlap, add the current overlap to final segments
+                final_segments.append(current_overlap)
+                current_overlap = (start, end)
+
+    if current_overlap is not None:
+        final_segments.append(current_overlap)
+
+    return final_segments
+
 #検出された区間のタイムスタンプを出力するやつ
 def extract_timestamp_from_overlap(motion_data, combine_overlap):
     results = []
