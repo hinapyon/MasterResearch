@@ -22,7 +22,7 @@ class SessionManager: NSObject, ObservableObject, WCSessionDelegate {
             let jsonData = try Data(contentsOf: fileURL)
             let jsonArray = try JSONSerialization.jsonObject(with: jsonData, options: .allowFragments) as? [[String: Any]]
 
-            var csvString = "Timestamp,AccelerationX,AccelerationY,AccelerationZ,GyroX,GyroY,GyroZ\n"
+            var csvString = "Timestamp,AccelerationX,AccelerationY,AccelerationZ,GyroX,GyroY,GyroZ,Marking\n"
             for json in jsonArray ?? [] {
                 let timestamp = json["timestamp"] as? Double ?? 0
                 let accX = json["accelerationX"] as? Double ?? 0
@@ -31,8 +31,8 @@ class SessionManager: NSObject, ObservableObject, WCSessionDelegate {
                 let gyroX = json["gyroX"] as? Double ?? 0
                 let gyroY = json["gyroY"] as? Double ?? 0
                 let gyroZ = json["gyroZ"] as? Double ?? 0
-
-                let csvLine = "\(timestamp),\(accX),\(accY),\(accZ),\(gyroX),\(gyroY),\(gyroZ)\n"
+                let mark = json["mark"] as? Bool ?? false
+                let csvLine = "\(timestamp),\(accX),\(accY),\(accZ),\(gyroX),\(gyroY),\(gyroZ),\(mark)\n"
                 csvString += csvLine
             }
 

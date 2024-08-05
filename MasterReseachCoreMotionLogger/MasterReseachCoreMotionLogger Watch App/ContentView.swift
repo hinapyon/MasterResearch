@@ -24,12 +24,20 @@ struct ContentView: View {
                     }
                     .padding(.bottom)
 
-                    Button("Check Data") {
-                        isShowingDataList = true
+                    if isRecording {
+                        Button(action: toggleMarking) {
+                            Text(motionData.isMarking ? "Unmark" : "Mark")
+                                .foregroundColor(.blue)
+                        }
+                        .buttonStyle(.bordered)
+                    } else {
+                        Button("Check Data") {
+                            isShowingDataList = true
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(isRecording)
+                        .foregroundColor(isRecording ? .gray : .blue)
                     }
-                    .buttonStyle(.bordered)
-                    .disabled(isRecording)
-                    .foregroundColor(isRecording ? .gray : .blue)
                 } else {
                     Text("Device Motion Not Available")
                         .foregroundColor(.red)
@@ -50,6 +58,10 @@ struct ContentView: View {
         DispatchQueue.main.async {
             isRecording.toggle()
         }
+    }
+    
+    func toggleMarking() {
+        motionData.isMarking.toggle()
     }
 }
 

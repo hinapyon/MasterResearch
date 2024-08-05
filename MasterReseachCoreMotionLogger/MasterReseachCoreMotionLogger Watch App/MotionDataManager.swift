@@ -11,6 +11,7 @@ class MotionDataManager: ObservableObject {
     private let saveQueue = DispatchQueue(label: "com.example.SaveMotionDataQueue", qos: .background)
     private let bufferQueue = DispatchQueue(label: "com.example.BufferQueue", attributes: .concurrent)
     private let maxBufferSize = 1000 // バッファの最大サイズを設定
+    @Published var isMarking = false
 
     @Published var acceleration: (x: Double, y: Double, z: Double) = (0.0, 0.0, 0.0)
     @Published var gyro: (x: Double, y: Double, z: Double) = (0.0, 0.0, 0.0)
@@ -51,7 +52,8 @@ class MotionDataManager: ObservableObject {
             accelerationZ: motion.userAcceleration.z,
             gyroX: motion.rotationRate.x,
             gyroY: motion.rotationRate.y,
-            gyroZ: motion.rotationRate.z
+            gyroZ: motion.rotationRate.z,
+            mark: self.isMarking
         )
 
         bufferQueue.async(flags: .barrier) {

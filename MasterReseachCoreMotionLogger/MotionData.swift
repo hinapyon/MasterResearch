@@ -9,4 +9,5 @@ struct MotionData: Codable {
     let gyroX: Double
     let gyroY: Double
     let gyroZ: Double
+    var mark: Bool
 }
