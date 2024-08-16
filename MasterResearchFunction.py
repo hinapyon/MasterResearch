@@ -368,6 +368,47 @@ def combine_overlapping_segments(overlap: list[list[tuple[int, int]]]) -> list[t
 
     return final_segments
 
+def filter_and_combine_segments(
+    segments: list[list[tuple[int, float, int, int]]],
+    Hz: int,
+    min_time: float,
+    max_time: float
+) -> list[tuple[int, int]]:
+    """
+    セグメントをフィルタリングし、重なり合っている部分を統合する関数。
+
+    この関数は、3軸のセグメントデータに対して、指定された時間範囲に基づいてフィルタリングを行い、
+    重なり合うセグメントを統合して、最終的なセグメントリストを返します。
+
+    Parameters:
+    segments (list of lists of tuples):
+        3軸分のセグメントリスト。各軸のセグメントリストは (l, d_min, t_s, t_e) のタプルで構成されます。
+    Hz (int):
+        サンプリング周波数（Hz）。1秒間に取得されるデータのサンプル数。
+    min_time (float):
+        フィルタリングの下限となる最小経過時間（秒）。
+    max_time (float):
+        フィルタリングの上限となる最大経過時間（秒）。
+
+    Returns:
+    list of tuples:
+        統合され、重なり合った部分がまとめられた最終的なセグメントリスト。各セグメントは (start, end) のタプルで構成されます。
+    """
+
+    # 3軸のセグメントを指定された時間範囲でフィルタリング
+    filtered_segments = three_axis_filter_segments_by_elapsed_time(segments, Hz, min_time, max_time)
+
+    # フィルタリングされたセグメントから、各教師データごとに重なり合いを検出
+    overlapping_segments = combine_and_find_overlapping_all_segments(filtered_segments)
+
+    # 重なり合っているセグメントを、経過時間に基づいてさらにフィルタリング
+    filtered_overlaps = filter_overlaps_by_elapsed_time(overlapping_segments, Hz, min_time, max_time)
+
+    # 重なり合っている部分を統合して最終的なセグメントリストを作成
+    final_segments = combine_overlapping_segments(filtered_overlaps)
+
+    return final_segments
+
 
 #検出された区間のタイムスタンプを出力するやつ
 def extract_timestamp_from_overlap(motion_data, combine_overlap):
