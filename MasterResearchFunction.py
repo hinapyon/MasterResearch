@@ -249,7 +249,11 @@ def three_axis_filter_segments_by_elapsed_time(segments_tuple: tuple[list[list[i
         for axis_segments in segments_tuple
     )
 
-def combine_and_find_overlapping_segments(segx, segy, segz):
+def combine_and_find_overlapping_segments(
+    segx: list[tuple[int, float, int, int]],
+    segy: list[tuple[int, float, int, int]],
+    segz: list[tuple[int, float, int, int]]
+) -> list[tuple[int, int]]:
     """
     3軸のセグメントを統合し、重なり合う時間範囲を見つける関数
 
@@ -288,7 +292,10 @@ def combine_and_find_overlapping_segments(segx, segy, segz):
 
     return overlap_ranges
 
-def combine_and_find_overlapping_all_segments(segments):
+
+def combine_and_find_overlapping_all_segments(
+    segments: list[list[list[tuple[int, float, int, int]]]]
+) -> list[list[tuple[int, int]]]:
     """
     各教師データの結果ごとにオーバーラップを検出する関数
 
@@ -300,7 +307,12 @@ def combine_and_find_overlapping_all_segments(segments):
     """
     return [combine_and_find_overlapping_segments(segments[0][i], segments[1][i], segments[2][i]) for i in range(len(segments[0]))]
 
-def filter_overlaps_by_elapsed_time(overlap, Hz, min_time, max_time):
+def filter_overlaps_by_elapsed_time(
+    overlap: list[list[tuple[int, int]]],
+    Hz: int,
+    min_time: float,
+    max_time: float
+) -> list[list[tuple[int, int]]]:
     """
     各教師データの結果ごとに出したオーバーラップから、経過時間に基づいて条件を満たさないセグメントを削除する関数
 
@@ -321,70 +333,41 @@ def filter_overlaps_by_elapsed_time(overlap, Hz, min_time, max_time):
 
     return filtered_overlap
 
-#overlapの中からさらにコンバインするやつ
-def combine_all_overlaps(overlap):
-    # Combine all segments from multiple lists into one list
+def combine_overlapping_segments(overlap: list[list[tuple[int, int]]]) -> list[tuple[int, int]]:
+    """
+    複数のリストに分かれたセグメントを統合し、重なり合っている部分のみを統合する関数。
+
+    Parameters:
+    overlap (list of lists of tuples): 複数のセグメントリスト。各セグメントリストは (start, end) のタプルで構成される。
+
+    Returns:
+    list of tuples: 統合され、重なり合った部分がまとめられたセグメントリスト。
+    """
+    # 全てのセグメントを一つのリストに統合
     combined_segments = []
     for segments in overlap:
         combined_segments.extend(segments)
 
-    # Sort combined segments
+    if not combined_segments:
+        return []
+
+    # Sort segments by start time
     combined_segments.sort()
-
-    # Find and merge overlapping segments
     final_segments = []
-    current_overlap = None
+    current_start, current_end = combined_segments[0]
 
-    for start, end in combined_segments:
-        if current_overlap is None:
-            current_overlap = (start, end)
-        else:
-            current_start, current_end = current_overlap
-            if start <= current_end:
-                current_overlap = (current_start, max(current_end, end))
-            else:
-                final_segments.append(current_overlap)
-                current_overlap = (start, end)
+    for start, end in combined_segments[1:]:
+        if start <= current_end:  # 重なり合っている場合
+            current_end = max(current_end, end)  # 終了時間を延長
+        else:  # 重ならない場合
+            final_segments.append((current_start, current_end))  # 現在のセグメントを追加
+            current_start, current_end = start, end  # 新しいセグメントを開始
 
-    if current_overlap is not None:
-        final_segments.append(current_overlap)
+    # 最後のセグメントを追加
+    final_segments.append((current_start, current_end))
 
     return final_segments
 
-def new_combine_all_overlaps(overlap):
-    # Combine all segments from multiple lists into one list
-    combined_segments = []
-    for segments in overlap:
-        combined_segments.extend(segments)
-
-    # Sort combined segments
-    combined_segments.sort()
-
-    # Find and merge overlapping segments
-    final_segments = []
-    current_overlap = None
-
-    for start, end in combined_segments:
-        if current_overlap is None:
-            current_overlap = (start, end)
-        else:
-            current_start, current_end = current_overlap
-            if start <= current_end:
-                # Check if the current segment is completely within the previous segment
-                if end <= current_end:
-                    continue
-                else:
-                    # Extend the current overlap segment
-                    current_overlap = (current_start, end)
-            else:
-                # If there is no overlap, add the current overlap to final segments
-                final_segments.append(current_overlap)
-                current_overlap = (start, end)
-
-    if current_overlap is not None:
-        final_segments.append(current_overlap)
-
-    return final_segments
 
 #検出された区間のタイムスタンプを出力するやつ
 def extract_timestamp_from_overlap(motion_data, combine_overlap):
