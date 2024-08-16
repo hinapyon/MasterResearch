@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import japanize_matplotlib
 
-def process_apple_watch_csv(file_path):
+def process_apple_watch_csv(file_path: str) -> pd.DataFrame:
     """
     Apple Watchからのモーションデータを読み込み、処理する関数
 
@@ -18,57 +18,35 @@ def process_apple_watch_csv(file_path):
     pd.DataFrame: 処理されたモーションデータを含むデータフレーム
     """
 
-    # CSVファイルの読み込み
+    # CSVファイルの読み込みとカラム名の設定
     motion_data = pd.read_csv(file_path, header=0, names=[
         'UnixTime', 'AccelerationX', 'AccelerationY', 'AccelerationZ',
-        'GyroX', 'GyroY', 'GyroZ'
+        'GyroX', 'GyroY', 'GyroZ', 'Marking'
     ])
 
-    # Unixタイムスタンプを日本時間に変換し、タイムゾーン情報を削除して表示する
-    motion_data['Timestamp'] = (
-        pd.to_datetime(motion_data['UnixTime'], unit='s')
-        .dt.tz_localize('UTC')
-        .dt.tz_convert('Asia/Tokyo')
-        .dt.tz_localize(None)
-    )
+    # タイムスタンプの変換
+    motion_data['Timestamp'] = pd.to_datetime(motion_data['UnixTime'], unit='s').dt.tz_localize('UTC').dt.tz_convert('Asia/Tokyo').dt.tz_localize(None)
 
-    # 加速度のユークリッドノルムを計算してデータフレームに追加
-    motion_data['EuclideanNorm'] = np.sqrt(
-        motion_data['AccelerationX']**2 +
-        motion_data['AccelerationY']**2 +
-        motion_data['AccelerationZ']**2
-    )
+    # ユークリッドノルムの計算
+    motion_data['EuclideanNorm'] = np.linalg.norm(motion_data[['AccelerationX', 'AccelerationY', 'AccelerationZ']], axis=1)
+    motion_data['EuclideanNormGyro'] = np.linalg.norm(motion_data[['GyroX', 'GyroY', 'GyroZ']], axis=1)
 
-    # 角速度のユークリッドノルムを計算してデータフレームに追加
-    motion_data['EuclideanNormGyro'] = np.sqrt(
-        motion_data['GyroX']**2 +
-        motion_data['GyroY']**2 +
-        motion_data['GyroZ']**2
-    )
-
-    # Savitzky-Golayフィルタのパラメータ設定
-    window_length = 11  # 窓の長さ（奇数、10サンプル以上）
-    polyorder = 2       # 多項式の次数（2次）
-
-    # Savitzky-Golayフィルタを適用
+    # Savitzky-Golayフィルタの適用
+    window_length = 11
+    polyorder = 2
     for axis in ['AccelerationX', 'AccelerationY', 'AccelerationZ', 'EuclideanNorm']:
         motion_data[f'SG_{axis}'] = savgol_filter(motion_data[axis], window_length, polyorder)
 
-    # FFTのサンプル数を取得
+    # FFTとパワースペクトルの計算
     N = len(motion_data)
-
-    # サンプリングレートを定義 (50Hzとする)
     Fs = 50
-
-    # FFT解析を行い、3軸加速度のパワースペクトルを計算してデータフレームに追加
     for axis in ['AccelerationX', 'AccelerationY', 'AccelerationZ', 'EuclideanNorm']:
-        accel_fft = np.fft.fft(motion_data[axis])
-        power_spectrum = np.abs(accel_fft)**2
-        motion_data[f'PowerSpectrum_{axis}'] = power_spectrum
+        fft_values = np.fft.fft(motion_data[axis])
+        motion_data[f'PowerSpectrum_{axis}'] = np.abs(fft_values)**2 / N
 
     return motion_data
 
-def process_all_apple_watch_csv_in_directory(directory):
+def process_all_apple_watch_csv_in_directory(directory: str) -> list[pd.DataFrame]:
     """
     指定されたディレクトリ内のすべてのApple WatchモーションデータCSVファイルを処理し、
     データフレームのリストとして返す関数。
@@ -79,22 +57,10 @@ def process_all_apple_watch_csv_in_directory(directory):
     Returns:
     list of pd.DataFrame: 処理されたモーションデータを含むデータフレームのリスト
     """
+    csv_files = [os.path.join(directory, f) for f in os.listdir(directory) if f.endswith('.csv')]
+    return [process_apple_watch_csv(file_path) for file_path in csv_files]
 
-    dataframes = []
-
-    # 指定されたディレクトリ内のすべてのファイルをチェック
-    for filename in os.listdir(directory):
-        # ファイルがCSVである場合のみ処理
-        if filename.endswith('.csv'):
-            file_path = os.path.join(directory, filename)
-            # CSVファイルを処理
-            df = process_apple_watch_csv(file_path)
-            # 処理されたデータフレームをリストに追加
-            dataframes.append(df)
-
-    return dataframes
-
-def process_tobii_csv(file_path):
+def process_tobii_csv(file_path: str) -> pd.DataFrame:
     """
     Tobii Pro Glasses 2からのアイトラッキングデータを読み込み、処理する関数
 
@@ -133,101 +99,18 @@ def process_tobii_csv(file_path):
 
     return processed_eye_data
 
-def dist(x, y):
-    return (x - y) ** 2
+def spring(G: list[float], QG: list[float], Th: float) -> list[tuple[int, float, int, int]]:
+    """
+    SPRINGアルゴリズムを使用して、時間シリーズデータのセグメントを検索する関数。
 
-def get_min(m0, m1, m2, i, j):
-    if m0 < m1:
-        if m0 < m2:
-            return i - 1, j, m0
-        else:
-            return i - 1, j - 1, m2
-    else:
-        if m1 < m2:
-            return i, j - 1, m1
-        else:
-            return i - 1, j - 1, m2
+    Parameters:
+    G (list of float): 対象の時間シリーズデータ。
+    QG (list of float): クエリ時間シリーズデータ。
+    Th (float): マッチングのしきい値。
 
-def spring_kawano(x, y, epsilon):
-    Tx = len(x)
-    Ty = len(y)
-
-    C = np.zeros((Tx, Ty))
-    B = np.zeros((Tx, Ty, 2), int)
-    S = np.zeros((Tx, Ty), int)
-
-    C[0, 0] = dist(x[0], y[0])
-
-    for j in range(1, Ty):
-        C[0, j] = C[0, j - 1] + dist(x[0], y[j])
-        B[0, j] = [0, j - 1]
-        S[0, j] = S[0, j - 1]
-
-    for i in range(1, Tx):
-        C[i, 0] = dist(x[i], y[0])
-        B[i, 0] = [0, 0]
-        S[i, 0] = i
-
-        for j in range(1, Ty):
-            pi, pj, m = get_min(C[i - 1, j],
-                                C[i, j - 1],
-                                C[i - 1, j - 1],
-                                i, j)
-            C[i, j] = dist(x[i], y[j]) + m
-            B[i, j] = [pi, pj]
-            S[i, j] = S[pi, pj]
-
-        imin = np.argmin(C[:(i+1), -1])
-        dmin = C[imin, -1]
-
-        if dmin > epsilon:
-            continue
-
-        for j in range(1, Ty):
-            if (C[i,j] < dmin) and (S[i, j] < imin):
-                break
-        else:
-            path = [[imin, Ty - 1]]
-            temp_i = imin
-            temp_j = Ty - 1
-
-            while (B[temp_i, temp_j][0] != 0 or B[temp_i, temp_j][1] != 0):
-                path.append(B[temp_i, temp_j])
-                temp_i, temp_j = B[temp_i, temp_j].astype(int)
-
-            C[S <= imin] = 100000000
-            yield np.array(path), dmin
-
-def plot_spring_kawano(data_x, data_y, timestamps, epsilon):
-    pathes = []
-    times = []
-
-    for path, cost in spring_kawano(data_x, data_y, epsilon):
-        plt.figure(figsize=(72, 6))  # グラフを横長にする
-
-        # マッチングパスをプロット
-        for line in path:
-            plt.plot([timestamps[line[0]], timestamps[line[1]]], [data_x[line[0]], data_y[line[1]]], linewidth=0.8, c="gray")
-
-        # 長いストリームデータと短いパターンデータをプロット
-        plt.plot(timestamps, data_x, label='long data')
-        plt.plot(timestamps[:len(data_y)], data_y, label='gesture data')
-
-        # マッチングパスの部分をプロット
-        plt.plot(timestamps[path[:,0]], data_x[path[:,0]], c="C2", label='similar')
-
-        plt.grid(True)  # グリッド表示
-        plt.legend()  # 凡例表示
-        plt.xticks(rotation=45)  # x軸のラベルを45度回転
-        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%M:%S:%f'))  # Timestampフォーマット設定
-        plt.show()
-
-        times.append(timestamps[path[:,0]])
-        pathes.append(path)
-
-    return pathes, times
-
-def spring_ogawa(G, QG, Th):
+    Returns:
+    list of list: 検出されたセグメントリスト。各セグメントは (i, d_min, t_s, t_e) のタプルで構成される。
+    """
     d = np.zeros((len(G)+1, len(QG)+1)) # distance
     s = np.zeros((len(G)+1, len(QG)+1), dtype=np.int32) # starting point of current distance calc.
     for j in range(1, len(QG)+1):
@@ -275,55 +158,111 @@ def spring_ogawa(G, QG, Th):
 
     return seg
 
-def three_axis_spring_ogawa(motion_data, train_data, Th1, Th2, Th3, Type):
-    segx, segy, segz = [], [], []
+def three_axis_spring(motion_data: pd.DataFrame, train_data: list[pd.DataFrame], thresholds: tuple[float, float, float], data_type: str) -> tuple[list[int, float, int, int], list[int, float, int, int], list[int, float, int, int]]:
+    """
+    3軸のSPRINGアルゴリズムを実行し、結果を返す関数
 
-    if Type == 'acc':
-        for i in range(len(train_data)):
-            segx.append(spring_ogawa(motion_data['AccelerationX'], train_data[i]['AccelerationX'], Th1))
-            segy.append(spring_ogawa(motion_data['AccelerationY'], train_data[i]['AccelerationY'], Th2))
-            segz.append(spring_ogawa(motion_data['AccelerationZ'], train_data[i]['AccelerationZ'], Th3))
+    Parameters:
+    motion_data (pd.DataFrame): 処理するモーションデータ
+    train_data (list of pd.DataFrame): 各教師データ
+    thresholds (tuple): 各軸に対するしきい値 (Th1, Th2, Th3)
+    data_type (str): 'acc', 'sgacc', または 'gyro' のいずれか
 
-    elif Type == 'sgacc':
-        for i in range(len(train_data)):
-            segx.append(spring_ogawa(motion_data['SG_AccelerationX'], train_data[i]['SG_AccelerationX'], Th1))
-            segy.append(spring_ogawa(motion_data['SG_AccelerationY'], train_data[i]['SG_AccelerationY'], Th2))
-            segz.append(spring_ogawa(motion_data['SG_AccelerationZ'], train_data[i]['SG_AccelerationZ'], Th3))
+    Returns:
+    tuple: 各軸のSPRINGアルゴリズムの結果 (segx, segy, segz)
+    """
+    axis_map = {
+        'acc': ['AccelerationX', 'AccelerationY', 'AccelerationZ'],
+        'sgacc': ['SG_AccelerationX', 'SG_AccelerationY', 'SG_AccelerationZ'],
+        'gyro': ['GyroX', 'GyroY', 'GyroZ']
+    }
 
-    elif Type == 'gyro':
-        for i in range(len(train_data)):
-            segx.append(spring_ogawa(motion_data['GyroX'], train_data[i]['GyroX'], Th1))
-            segy.append(spring_ogawa(motion_data['GyroY'], train_data[i]['GyroY'], Th2))
-            segz.append(spring_ogawa(motion_data['GyroZ'], train_data[i]['GyroZ'], Th3))
+    axes = axis_map.get(data_type)
+    if axes is None:
+        raise ValueError("Invalid data type. Choose from 'acc', 'sgacc', or 'gyro'.")
 
-    return segx, segy, segz
+    seg_results = [[], [], []]  # segx, segy, segz に相当
 
-#各セグメントをフィルタリングする関数
-def filter_seg_by_elapsed_time(seg, motion_data, min_time, max_time):
-    filtered_seg = []
-    for segment in seg:  # 直接セグメントをイテレート
-        temp = []
-        for (l, d_min, t_s, t_e) in segment:
-            start_time = motion_data['Timestamp'][t_s]
-            end_time = motion_data['Timestamp'][t_e]
-            elapsed_time = (end_time - start_time).total_seconds()
-            if min_time < elapsed_time < max_time:
-                temp.append((t_s, t_e))
-        filtered_seg.append(temp)  # フィルタリング後にデータが存在しなくても空リストを追加
-    return filtered_seg
+    for i in range(len(train_data)):
+        for j, axis in enumerate(axes):
+            seg_results[j].append(spring(motion_data[axis], train_data[i][axis], thresholds[j]))
 
-#セグメントを統合
+    return tuple(seg_results)
+
+def is_within_time_range(t_s: int, t_e: int, Hz: int, min_time: float, max_time: float) -> bool:
+    """
+    指定された開始時間と終了時間の間の経過時間が、指定された時間範囲内にあるかどうかを判定する関数。
+
+    Parameters:
+    t_s (int): 開始時間（サンプルインデックス）。
+    t_e (int): 終了時間（サンプルインデックス）。
+    Hz (int): サンプリング周波数（Hz）。1秒間に取得されるデータのサンプル数。
+    min_time (float): 下限となる最小経過時間（秒）。
+    max_time (float): 上限となる最大経過時間（秒）。
+
+    Returns:
+    bool: 経過時間が指定された範囲内であればTrue、そうでなければFalse。
+    """
+    elapsed_time = (t_e - t_s) / Hz
+    return min_time < elapsed_time < max_time
+
+def filter_segments_by_elapsed_time(segments: list[list[tuple[int, float, int, int]]], Hz: int, min_time: float, max_time: float) -> list[tuple[int, float, int, int]]:
+    """
+    セグメントの開始時間と終了時間の間の経過時間に基づいてセグメントをフィルタリングし、
+    入力セグメントと同じ構造で返す関数。
+
+    Parameters:
+    segments (list of list): 各セグメントのリスト。セグメントは (l, d_min, t_s, t_e) のタプルで構成される。
+    Hz (int): サンプリング周波数（Hz）。1秒間に取得されるデータのサンプル数。
+    min_time (float): フィルタリングの下限となる最小経過時間（秒）。
+    max_time (float): フィルタリングの上限となる最大経過時間（秒）。
+
+    Returns:
+    list of list: フィルタリングされたセグメントのリスト。セグメントは (l, d_min, t_s, t_e) のタプルで構成される。
+    """
+
+    filtered_segments = [
+        [(l, d_min, t_s, t_e) for l, d_min, t_s, t_e in segment if is_within_time_range(t_s, t_e, Hz, min_time, max_time)]
+        for segment in segments
+    ]
+
+    return filtered_segments
+
+def three_axis_filter_segments_by_elapsed_time(segments_tuple: tuple[list[list[int, float, int, int]], list[list[int, float, int, int]], list[list[int, float, int, int]]], Hz: int, min_time: float, max_time: float) -> tuple[list[list[int, float, int, int]], list[list[int, float, int, int]], list[list[int, float, int, int]]]:
+    """
+    3軸分のセグメントをフィルタリングし、フィルタリング後の3軸分のセグメントタプルを返す関数。
+
+    Parameters:
+    segments_tuple (tuple of lists):
+    3軸分のセグメントリストのタプル。
+    各軸のセグメントリストは (l, d_min, t_s, t_e) のタプルで構成される。
+    Hz (int): サンプリング周波数（Hz）。
+    min_time (float): フィルタリングの下限となる最小経過時間（秒）。
+    max_time (float): フィルタリングの上限となる最大経過時間（秒）。
+
+    Returns:
+    tuple of lists: フィルタリングされた3軸分のセグメントリストのタプル。
+    """
+
+    return tuple(
+        filter_segments_by_elapsed_time(axis_segments, Hz, min_time, max_time)
+        for axis_segments in segments_tuple
+    )
+
 def combine_and_find_overlapping_segments(segx, segy, segz):
-    # Combine all segments
-    all_segments = []
-    for seg in [segx, segy, segz]:
-        for (i, d_min, t_s, t_e) in seg:
-            all_segments.append((t_s, t_e))
+    """
+    3軸のセグメントを統合し、重なり合う時間範囲を見つける関数
 
-    # Sort segments
-    all_segments.sort()
+    Parameters:
+    segx, segy, segz (list of tuples): 各軸のセグメントリスト (i, d_min, t_s, t_e)
 
-    # Find overlapping segments
+    Returns:
+    overlap_ranges (list of tuples): 重なり合った時間範囲のリスト (start, end)
+    """
+
+    # セグメントの統合とソート
+    all_segments = sorted((t_s, t_e) for seg in [segx, segy, segz] for _, _, t_s, t_e in seg)
+
     overlap_ranges = []
     current_overlap = None
     current_count = 0
@@ -338,72 +277,48 @@ def combine_and_find_overlapping_segments(segx, segy, segz):
                 current_overlap = (current_start, max(current_end, end))
                 current_count += 1
             else:
-                if current_count >= 2:
+                if current_count >= 3:
                     overlap_ranges.append(current_overlap)
                 current_overlap = (start, end)
                 current_count = 1
 
-    if current_count >= 2:
+    # 最後の重なり合い範囲を確認して追加
+    if current_count >= 3:
         overlap_ranges.append(current_overlap)
 
     return overlap_ranges
 
-#フィルタリングされたセグメントを統合
-def combine_and_find_overlapping_filtered_segments(segx, segy, segz):
-    # Combine all segments
-    all_segments = []
-    for seg in [segx, segy, segz]:
-        for (t_s, t_e) in seg:
-            all_segments.append((t_s, t_e))
+def combine_and_find_overlapping_all_segments(segments):
+    """
+    各教師データの結果ごとにオーバーラップを検出する関数
 
-    # Sort segments
-    all_segments.sort()
+    Parameters:
+    segments (list of lists of tuples): 各軸のセグメントリスト。各セグメントリストは (l, d_min, t_s, t_e) のタプルを含む。
 
-    # Find overlapping segments
-    overlap_ranges = []
-    current_overlap = None
-    current_count = 0
+    Returns:
+    list of lists of tuples: 重複している区間のリスト。各区間は (t_s, t_e) のタプルで構成される。
+    """
+    return [combine_and_find_overlapping_segments(segments[0][i], segments[1][i], segments[2][i]) for i in range(len(segments[0]))]
 
-    for start, end in all_segments:
-        if current_overlap is None:
-            current_overlap = (start, end)
-            current_count = 1
-        else:
-            current_start, current_end = current_overlap
-            if start <= current_end:
-                current_overlap = (current_start, max(current_end, end))
-                current_count += 1
-            else:
-                if current_count >= 2:
-                    overlap_ranges.append(current_overlap)
-                current_overlap = (start, end)
-                current_count = 1
+def filter_overlaps_by_elapsed_time(overlap, Hz, min_time, max_time):
+    """
+    各教師データの結果ごとに出したオーバーラップから、経過時間に基づいて条件を満たさないセグメントを削除する関数
 
-    if current_count >= 2:
-        overlap_ranges.append(current_overlap)
+    Parameters:
+    overlap (list of lists of tuples): 各セグメントリスト。各セグメントは (start, end) のタプルで構成される。
+    Hz (int): サンプリング周波数（Hz）。1秒間に取得されるデータのサンプル数。
+    min_time (float): フィルタリングの下限となる最小経過時間（秒）。
+    max_time (float): フィルタリングの上限となる最大経過時間（秒）。
 
-    return overlap_ranges
+    Returns:
+    list of lists of tuples: フィルタリングされたオーバーラップのリスト。各区間は (start, end) のタプルで構成される。
+    """
 
-# 各教師データの結果ごとにオーバーラップを検出
-def overlap_from_three_segments(segx, segy, segz):
-    overlap = []
-    for i in range(len(segx)):
-        overlap.append(combine_and_find_overlapping_segments(segx[i], segy[i], segz[i]))
-    return overlap
+    filtered_overlap = [
+        [(start, end) for start, end in segments if is_within_time_range(start, end, Hz, min_time, max_time)]
+        for segments in overlap if segments
+    ]
 
-# 各教師データの結果ごとに出したオーバーラップから、条件を満たさないセグメントを削除する関数
-def filter_overlap_by_elapsed_time(overlap, motion_data, min_time, max_time):
-    filtered_overlap = []
-    for segments in overlap:
-        temp = []
-        for start, end in segments:
-            start_time = motion_data['Timestamp'][start]
-            end_time = motion_data['Timestamp'][end]
-            elapsed_time = (end_time - start_time).total_seconds()
-            if min_time < elapsed_time < max_time:
-                temp.append((start, end))
-        if temp:  # フィルタリング後にデータが存在する場合のみ追加
-            filtered_overlap.append(temp)
     return filtered_overlap
 
 #overlapの中からさらにコンバインするやつ
