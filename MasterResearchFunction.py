@@ -62,13 +62,14 @@ def process_all_apple_watch_csv_in_directory(directory: str) -> list[pd.DataFram
 
 def process_tobii_csv(file_path: str) -> pd.DataFrame:
     """
-    Tobii Pro Glasses 2からのアイトラッキングデータを読み込み、処理する関数
+    Tobii Pro Glasses 2からのアイトラッキングデータを読み込み、処理し、
+    元のデータと各種特徴量の標準偏差と平均を1つのデータフレームにまとめて出力する関数。
 
     Parameters:
     file_path (str): CSVファイルのパス
 
     Returns:
-    pd.DataFrame: 処理されたアイトラッキングデータを含むデータフレーム
+    pd.DataFrame: 元のデータと各特徴量の標準偏差および平均を含むデータフレーム
     """
 
     # CSVファイルの読み込み
@@ -86,7 +87,7 @@ def process_tobii_csv(file_path: str) -> pd.DataFrame:
         pd.to_timedelta(eye_data['Recording timestamp'].dt.strftime('%H:%M:%S.%f'))
     )
 
-    # 不要なカラムを削除し、'Eye Tracker'センサーのデータのみを抽出
+    # 'Eye Tracker'センサーのデータのみを抽出
     processed_eye_data = eye_data[
         eye_data['Sensor'] == 'Eye Tracker'
     ].drop(columns=[
@@ -96,6 +97,41 @@ def process_tobii_csv(file_path: str) -> pd.DataFrame:
         'Recording start time', 'Recording media name', 'Recording media width',
         'Recording media height'
     ])
+
+    # 特徴量計算
+    def calculate_distance_2d(data, x_col, y_col):
+        diff_x = data[x_col].interpolate(method='linear').diff()
+        diff_y = data[y_col].interpolate(method='linear').diff()
+        return np.sqrt(diff_x**2 + diff_y**2)
+
+    def calculate_distance_3d(data, x_col, y_col, z_col):
+        diff_x = data[x_col].interpolate(method='linear').diff()
+        diff_y = data[y_col].interpolate(method='linear').diff()
+        diff_z = data[z_col].interpolate(method='linear').diff()
+        return np.sqrt(diff_x**2 + diff_y**2 + diff_z**2)
+
+    # 各特徴量を計算
+    features = {
+        'Gaze2D_Distance': calculate_distance_2d(processed_eye_data, 'Gaze point X', 'Gaze point Y'),
+        'Fixation_Distance': calculate_distance_2d(processed_eye_data, 'Fixation point X', 'Fixation point Y'),
+        'Gaze3D_Distance': calculate_distance_3d(processed_eye_data, 'Gaze point 3D X', 'Gaze point 3D Y', 'Gaze point 3D Z'),
+        'Pupil_Diameter_Change': (
+            processed_eye_data['Pupil diameter right'].interpolate(method='linear').diff() +
+            processed_eye_data['Pupil diameter left'].interpolate(method='linear').diff()
+        ) / 2,
+        'GazeDirection_Distance': (
+            calculate_distance_3d(processed_eye_data, 'Gaze direction right X', 'Gaze direction right Y', 'Gaze direction right Z') +
+            calculate_distance_3d(processed_eye_data, 'Gaze direction left X', 'Gaze direction left Y', 'Gaze direction left Z')
+        ) / 2,
+        'PupilPosition_Distance': (
+            calculate_distance_3d(processed_eye_data, 'Pupil position right X', 'Pupil position right Y', 'Pupil position right Z') +
+            calculate_distance_3d(processed_eye_data, 'Pupil position left X', 'Pupil position left Y', 'Pupil position left Z')
+        ) / 2
+    }
+
+    # 特徴量をデータフレームに追加
+    for feature_name, feature_data in features.items():
+        processed_eye_data[feature_name] = feature_data
 
     return processed_eye_data
 
@@ -409,22 +445,12 @@ def filter_and_combine_segments(
 
     return final_segments
 
-
 #検出された区間のタイムスタンプを出力するやつ
 def extract_timestamp_from_overlap(motion_data, combine_overlap):
     results = []
     for start, end in combine_overlap:
         results.append([motion_data['Timestamp'][start], motion_data['Timestamp'][end]])
     return results
-
-# 経過時間を算出して条件に合わないセグメントを削除する関数
-def filter_segments_by_time_length(results, min_time, max_time):
-    filtered_results = []
-    for start_time, end_time in results:
-        elapsed_time = (end_time - start_time).total_seconds()
-        if min_time < elapsed_time < max_time:
-            filtered_results.append([start_time, end_time])
-    return filtered_results
 
 # filtered_results の範囲内の eye_data['Timestamp'] を抽出する関数
 def extract_eye_data_within_intervals(filtered_results, eye_data):
