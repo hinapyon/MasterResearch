@@ -3,7 +3,7 @@ import CoreMotion
 
 class MotionDataManager: ObservableObject {
     private var motionManager = CMMotionManager()
-    private let updateInterval = 0.02 // 50Hz
+    private let updateInterval = 0.01 // 50Hz
     private var currentBuffer: [MotionData] = []
     private var backupBuffer: [MotionData] = []
     private var isUsingCurrentBuffer = true
