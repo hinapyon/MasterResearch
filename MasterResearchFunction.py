@@ -483,19 +483,22 @@ def filter_by_std_gaze(extracted_eye_data, filtered_results, threshold):
 
     return filtered_extracted_eye_data, filtered_filtered_results
 
-# 保存する変数を辞書にまとめる関数
-def create_data_dict(segment_type):
-    return {
-        f'a_yuuma_{segment_type}_segx': globals()[f'a_yuuma_{segment_type}_segx'],
-        f'a_yuuma_{segment_type}_segy': globals()[f'a_yuuma_{segment_type}_segy'],
-        f'a_yuuma_{segment_type}_segz': globals()[f'a_yuuma_{segment_type}_segz'],
-        f'b_sakamoto_{segment_type}_segx': globals()[f'b_sakamoto_{segment_type}_segx'],
-        f'b_sakamoto_{segment_type}_segy': globals()[f'b_sakamoto_{segment_type}_segy'],
-        f'b_sakamoto_{segment_type}_segz': globals()[f'b_sakamoto_{segment_type}_segz'],
-        f'c_watabe_{segment_type}_segx': globals()[f'c_watabe_{segment_type}_segx'],
-        f'c_watabe_{segment_type}_segy': globals()[f'c_watabe_{segment_type}_segy'],
-        f'c_watabe_{segment_type}_segz': globals()[f'c_watabe_{segment_type}_segz'],
-        f'd_nakazawa_{segment_type}_segx': globals()[f'd_nakazawa_{segment_type}_segx'],
-        f'd_nakazawa_{segment_type}_segy': globals()[f'd_nakazawa_{segment_type}_segy'],
-        f'd_nakazawa_{segment_type}_segz': globals()[f'd_nakazawa_{segment_type}_segz']
-    }
+# 'Marking' カラムがTrueとなっている箇所を抽出
+def find_true_intervals(df):
+    true_intervals = []
+    start_index = None
+
+    for index, row in df.iterrows():
+        if row['Marking']:
+            if start_index is None:
+                start_index = index
+        else:
+            if start_index is not None:
+                true_intervals.append((start_index, index - 1))
+                start_index = None
+
+    # 最後のTrueの区間がデータフレームの最後まで続く場合
+    if start_index is not None:
+        true_intervals.append((start_index, df.index[-1]))
+
+    return true_intervals
