@@ -1,6 +1,8 @@
 import os
 import numpy as np
 import pandas as pd
+import pickle
+import random
 from scipy import signal, stats
 from scipy.signal import savgol_filter
 import matplotlib.pyplot as plt
@@ -134,6 +136,54 @@ def process_tobii_csv(file_path: str) -> pd.DataFrame:
         processed_eye_data[feature_name] = feature_data
 
     return processed_eye_data
+
+def load_motion_and_eye_data(name: str) -> tuple[list[pd.DataFrame], list[str]]:
+    """
+    指定された人物名とジェスチャーラベルに対応するデータを読み込み、
+    不要なカラムを削除して前処理した目のデータとジェスチャーラベルのリストを返す関数。
+
+    Parameters:
+    name (str): データを読み込む人物の名前
+    labels (List[str]): 読み込むジェスチャーラベルのリスト
+    columns_to_drop (List[str]): 削除するカラム名のリスト
+
+    Returns:
+    Tuple[List[pd.DataFrame], List[str]]:
+        - 前処理された目のデータ（データフレームのリスト）
+        - 対応するジェスチャーラベルのリスト
+    """
+    motion_data_filename = f'datasets/new/{name}/motion/{name}_new_routine.csv'
+    eye_data_filename = f'datasets/new/{name}/eye/{name}_eye_new_routine.csv'
+    motion_data = process_apple_watch_csv(motion_data_filename)
+    eye_data = process_tobii_csv(eye_data_filename)
+    return motion_data, eye_data
+
+def load_gesture_eye_data_pickle(name: str, labels: list[str], columns_to_drop: list[str]) -> tuple[list[pd.DataFrame], list[str]]:
+    """
+    指定された人物名とジェスチャーラベルに対応するデータを読み込み、
+    不要なカラムを削除して前処理した目のデータとジェスチャーラベルのリストを返す関数。
+
+    Parameters:
+    name (str): データを読み込む人物の名前
+    labels (List[str]): 読み込むジェスチャーラベルのリスト
+    columns_to_drop (List[str]): 削除するカラム名のリスト
+
+    Returns:
+    Tuple[List[pd.DataFrame], List[str]]:
+        - 前処理された目のデータ（データフレームのリスト）
+        - 対応するジェスチャーラベルのリスト
+    """
+    gesture_eye_data = []
+    gesture_labels = []
+    for label in labels:
+        filename = f'datasets/new/{name}/eye/train_pickle/{name}_{label}_eye.pkl'
+        with open(filename, 'rb') as f:
+            data = pickle.load(f)
+            # 指定されたカラムを削除
+            processed_data = [df.drop(columns=columns_to_drop) for df in data]
+            gesture_eye_data.extend(processed_data)
+        gesture_labels.extend([label] * len(processed_data))
+    return gesture_eye_data, gesture_labels
 
 def spring(G: list[float], QG: list[float], Th: float) -> list[tuple[int, float, int, int]]:
     """
@@ -483,13 +533,22 @@ def filter_by_std_gaze(extracted_eye_data, filtered_results, threshold):
 
     return filtered_extracted_eye_data, filtered_filtered_results
 
-# 'Marking' カラムがTrueとなっている箇所を抽出
-def find_true_intervals(df):
+def find_true_intervals(df: pd.DataFrame, column_name: str = 'Marking') -> list:
+    """
+    データフレーム内で指定されたカラムがTrueとなっている区間の開始・終了インデックスを抽出する関数。
+
+    Parameters:
+    df (pd.DataFrame): 対象のデータフレーム
+    column_name (str): 真偽値を持つカラム名（デフォルトは 'Marking'）
+
+    Returns:
+    list of tuples: 各区間の開始インデックスと終了インデックスのタプルのリスト
+    """
     true_intervals = []
     start_index = None
 
     for index, row in df.iterrows():
-        if row['Marking']:
+        if row[column_name]:
             if start_index is None:
                 start_index = index
         else:
@@ -502,3 +561,125 @@ def find_true_intervals(df):
         true_intervals.append((start_index, df.index[-1]))
 
     return true_intervals
+
+def get_exclusion_intervals(motion_data: pd.DataFrame) -> pd.DataFrame:
+    true_intervals = find_true_intervals(motion_data)
+    intervals = [
+        [motion_data.loc[start_idx, "Timestamp"], motion_data.loc[end_idx, "Timestamp"]]
+        for start_idx, end_idx in true_intervals
+    ]
+    intervals_df = pd.DataFrame(intervals, columns=['start', 'end'])
+    intervals_df = intervals_df.sort_values('start').reset_index(drop=True)
+
+    # デバッグ: 各インターバルの型を確認
+    for i, row in intervals_df.iterrows():
+        print(f"Exclusion Interval {i}: start={row['start']}, end={row['end']}, types=({type(row['start'])}, {type(row['end'])})")
+
+    return intervals_df
+
+def get_available_intervals(
+    exclusion_intervals: pd.DataFrame,
+    start_time: pd.Timestamp,
+    end_time: pd.Timestamp,
+    continuity_threshold: float = 0.05  # 50ms
+) -> list:
+    """
+    利用可能なインターバル（除外インターバル外の区間）を取得する関数。
+    連続性を保つため、隣接するインターバル間のギャップが閾値以下の場合は統合します。
+
+    Parameters:
+    exclusion_intervals (pd.DataFrame): 除外するインターバルのデータフレーム
+    start_time (pd.Timestamp): データ全体の開始時刻
+    end_time (pd.Timestamp): データ全体の終了時刻
+    continuity_threshold (float): インターバル間のギャップの最大許容時間（秒）
+
+    Returns:
+    list of tuples: 各利用可能なインターバルの開始・終了時刻のリスト
+    """
+    available_intervals = []
+
+    if exclusion_intervals.empty:
+        available_intervals.append((start_time, end_time))
+        return available_intervals
+
+    # Sort exclusion intervals just in case
+    exclusion_intervals = exclusion_intervals.sort_values('start').reset_index(drop=True)
+
+    # Handle the first available interval before the first exclusion interval
+    first_excl_start = exclusion_intervals.iloc[0]['start']
+    if first_excl_start > start_time:
+        available_intervals.append((start_time, first_excl_start))
+
+    # Handle gaps between exclusion intervals
+    for i in range(len(exclusion_intervals) - 1):
+        current_excl_end = exclusion_intervals.iloc[i]['end']
+        next_excl_start = exclusion_intervals.iloc[i + 1]['start']
+        gap_duration = (next_excl_start - current_excl_end).total_seconds()
+        if gap_duration >= continuity_threshold:
+            available_intervals.append((current_excl_end, next_excl_start))
+
+    # Handle the last available interval after the last exclusion interval
+    last_excl_end = exclusion_intervals.iloc[-1]['end']
+    if last_excl_end < end_time:
+        available_intervals.append((last_excl_end, end_time))
+
+    return available_intervals
+
+def extract_random_intervals(
+    eye_data: pd.DataFrame,
+    available_intervals: list,
+    min_interval: float,
+    max_interval: float,
+    num_intervals: int,
+    continuity_threshold: float = 0.05  # 50ms
+) -> list:
+    extracted_intervals = []
+    attempts = 0
+    max_attempts = num_intervals * 10
+
+    while len(extracted_intervals) < num_intervals and attempts < max_attempts:
+        attempts += 1
+
+        suitable_intervals = [
+            interval for interval in available_intervals
+            if (interval[1] - interval[0]).total_seconds() >= min_interval
+        ]
+
+        if not suitable_intervals:
+            print("利用可能なインターバルが足りません。")
+            break
+
+        avail_start, avail_end = random.choice(suitable_intervals)
+        avail_duration = (avail_end - avail_start).total_seconds()
+
+        print(f"Attempt {attempts}: Selected interval ({avail_start}, {avail_end}) with duration {avail_duration} seconds.")
+
+        max_possible_duration = min(avail_duration, max_interval)
+        duration = random.uniform(min_interval, max_possible_duration)
+
+        latest_start_time = avail_end - pd.Timedelta(seconds=duration)
+        if latest_start_time <= avail_start:
+            continue
+
+        random_offset_seconds = random.uniform(0, (latest_start_time - avail_start).total_seconds())
+        start = avail_start + pd.Timedelta(seconds=random_offset_seconds)
+        end = start + pd.Timedelta(seconds=duration)
+
+        print(f"Extracting interval from {start} to {end} (duration: {duration} seconds).")
+
+        data_in_interval = eye_data[
+            (eye_data['Timestamp'] >= start) & (eye_data['Timestamp'] <= end)
+        ]
+
+        if not data_in_interval.empty:
+            time_diffs = data_in_interval['Timestamp'].diff().dt.total_seconds().dropna()
+            if all(time_diffs.between(0.015, 0.025)):  # 50Hzに近い（0.02秒）の許容範囲
+                extracted_intervals.append(data_in_interval)
+                print(f"Interval {len(extracted_intervals)} extracted successfully.")
+            else:
+                print(f"Interval {len(extracted_intervals)} has discontinuities. Skipping.")
+        else:
+            continue
+
+    print(f"抽出されたインターバル数: {len(extracted_intervals)}")
+    return extracted_intervals
