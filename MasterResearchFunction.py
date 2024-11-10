@@ -1,13 +1,67 @@
+# 基本ライブラリ
+import csv
+import math
 import os
-import numpy as np
-import pandas as pd
 import pickle
 import random
-from scipy import signal, stats
-from scipy.signal import savgol_filter
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
+import re
+import statistics
+from datetime import datetime, timedelta
+from decimal import Decimal
+
+# 数値計算とデータ処理
+import bottleneck as bn
+import numpy as np
+import pandas as pd
+
+# 機械学習ライブラリ
+from sklearn import preprocessing
+from sklearn.metrics import accuracy_score, classification_report
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+
+# ディープラーニングライブラリ
+import tensorflow as tf
+from tensorflow.keras.layers import (
+    Activation,
+    Add,
+    Conv1D,
+    Dense,
+    Dropout,
+    Flatten,
+    GlobalAveragePooling1D,
+    Input,
+    LayerNormalization,
+    LSTM,
+    Masking,
+    MaxPooling1D,
+    MultiHeadAttention,
+)
+from tensorflow.keras.models import Model, Sequential
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.utils import to_categorical
+
+
+# プロットと可視化
 import japanize_matplotlib
+import matplotlib.dates as mdates
+import matplotlib.pyplot as plt
+
+# その他のライブラリ
+from fastdtw import fastdtw
+from scipy import signal, stats
+from scipy.interpolate import interp1d, UnivariateSpline
+from scipy.signal import savgol_filter
+from scipy.spatial.distance import euclidean
+from tslearn.metrics import dtw_path
+
+COLUMNS_TO_DROP = [
+    'Sensor', 'Participant name', 'Event', 'Event value',
+    'Eye movement type', 'Eye movement type index', 'Ungrouped',
+    'Validity left', 'Validity right', 'Gaze event duration', 'Gaze2D_Distance',
+    'Fixation_Distance', 'Gaze3D_Distance', 'Pupil_Diameter_Change',
+    'GazeDirection_Distance', 'PupilPosition_Distance'
+]
 
 def process_apple_watch_csv(file_path: str) -> pd.DataFrame:
     """
@@ -585,13 +639,13 @@ def get_available_intervals(
 ) -> list:
     """
     利用可能なインターバル（除外インターバル外の区間）を取得する関数。
-    連続性を保つため、隣接するインターバル間のギャップが閾値以下の場合は統合します。
+    連続性を保つため、隣接するインターバル間のギャップが閾値以上の場合のみ利用可能とします。
 
     Parameters:
-    exclusion_intervals (pd.DataFrame): 除外するインターバルのデータフレーム
+    exclusion_intervals (pd.DataFrame): 除外するインターバルのデータフレーム（'start' と 'end' カラム）
     start_time (pd.Timestamp): データ全体の開始時刻
     end_time (pd.Timestamp): データ全体の終了時刻
-    continuity_threshold (float): インターバル間のギャップの最大許容時間（秒）
+    continuity_threshold (float): インターバル間のギャップの最小許容時間（秒）
 
     Returns:
     list of tuples: 各利用可能なインターバルの開始・終了時刻のリスト
@@ -602,26 +656,36 @@ def get_available_intervals(
         available_intervals.append((start_time, end_time))
         return available_intervals
 
-    # Sort exclusion intervals just in case
+    # 除外インターバルを開始時刻でソート
     exclusion_intervals = exclusion_intervals.sort_values('start').reset_index(drop=True)
 
-    # Handle the first available interval before the first exclusion interval
-    first_excl_start = exclusion_intervals.iloc[0]['start']
-    if first_excl_start > start_time:
-        available_intervals.append((start_time, first_excl_start))
+    # 前の除外インターバルの終了時刻を初期化
+    prev_end = start_time
 
-    # Handle gaps between exclusion intervals
-    for i in range(len(exclusion_intervals) - 1):
-        current_excl_end = exclusion_intervals.iloc[i]['end']
-        next_excl_start = exclusion_intervals.iloc[i + 1]['start']
-        gap_duration = (next_excl_start - current_excl_end).total_seconds()
+    for idx, row in exclusion_intervals.iterrows():
+        excl_start = row['start']
+        excl_end = row['end']
+
+        # 前の終了時刻と現在の開始時刻のギャップを計算
+        gap_start = prev_end
+        gap_end = excl_start
+
+        gap_duration = (gap_end - gap_start).total_seconds()
+
         if gap_duration >= continuity_threshold:
-            available_intervals.append((current_excl_end, next_excl_start))
+            available_intervals.append((gap_start, gap_end))
 
-    # Handle the last available interval after the last exclusion interval
-    last_excl_end = exclusion_intervals.iloc[-1]['end']
-    if last_excl_end < end_time:
-        available_intervals.append((last_excl_end, end_time))
+        # 前の終了時刻を更新
+        prev_end = excl_end
+
+    # 最後の除外インターバル後のギャップを計算
+    gap_start = prev_end
+    gap_end = end_time
+
+    gap_duration = (gap_end - gap_start).total_seconds()
+
+    if gap_duration >= continuity_threshold:
+        available_intervals.append((gap_start, gap_end))
 
     return available_intervals
 
@@ -633,13 +697,29 @@ def extract_random_intervals(
     num_intervals: int,
     continuity_threshold: float = 0.05  # 50ms
 ) -> list:
+    """
+    利用可能なインターバルから指定された長さのランダムなインターバルを抽出する関数。
+    抽出するインターバル内のデータが連続していることを確認します。
+
+    Parameters:
+    eye_data (pd.DataFrame): 目のデータを含むデータフレーム（'Timestamp' カラムが必要）
+    available_intervals (list): 利用可能なインターバルのリスト（開始時刻と終了時刻のタプル）
+    min_interval (float): 最小インターバル長（秒）
+    max_interval (float): 最大インターバル長（秒）
+    num_intervals (int): 抽出するインターバルの数
+    continuity_threshold (float): インターバル内のタイムスタンプの最大許容飛び（秒）
+
+    Returns:
+    list of pd.DataFrame: 抽出されたデータフレームのリスト
+    """
     extracted_intervals = []
     attempts = 0
-    max_attempts = num_intervals * 10
+    max_attempts = num_intervals * 10  # 最大試行回数
 
     while len(extracted_intervals) < num_intervals and attempts < max_attempts:
         attempts += 1
 
+        # 利用可能なインターバルをフィルタリング
         suitable_intervals = [
             interval for interval in available_intervals
             if (interval[1] - interval[0]).total_seconds() >= min_interval
@@ -649,37 +729,222 @@ def extract_random_intervals(
             print("利用可能なインターバルが足りません。")
             break
 
+        # ランダムに利用可能なインターバルを選択
         avail_start, avail_end = random.choice(suitable_intervals)
         avail_duration = (avail_end - avail_start).total_seconds()
 
-        print(f"Attempt {attempts}: Selected interval ({avail_start}, {avail_end}) with duration {avail_duration} seconds.")
+        # 抽出するインターバルの長さを決定
+        duration = random.uniform(min_interval, min(avail_duration, max_interval))
 
-        max_possible_duration = min(avail_duration, max_interval)
-        duration = random.uniform(min_interval, max_possible_duration)
+        # 抽出可能な開始時刻の範囲を計算
+        max_start_time = avail_end - pd.Timedelta(seconds=duration)
 
-        latest_start_time = avail_end - pd.Timedelta(seconds=duration)
-        if latest_start_time <= avail_start:
+        if max_start_time <= avail_start:
             continue
 
-        random_offset_seconds = random.uniform(0, (latest_start_time - avail_start).total_seconds())
+        # ランダムなオフセットを計算
+        random_offset_seconds = random.uniform(0, (max_start_time - avail_start).total_seconds())
         start = avail_start + pd.Timedelta(seconds=random_offset_seconds)
         end = start + pd.Timedelta(seconds=duration)
 
-        print(f"Extracting interval from {start} to {end} (duration: {duration} seconds).")
-
+        # インターバル内のデータを抽出
         data_in_interval = eye_data[
             (eye_data['Timestamp'] >= start) & (eye_data['Timestamp'] <= end)
         ]
 
-        if not data_in_interval.empty:
-            time_diffs = data_in_interval['Timestamp'].diff().dt.total_seconds().dropna()
-            if all(time_diffs.between(0.015, 0.025)):  # 50Hzに近い（0.02秒）の許容範囲
-                extracted_intervals.append(data_in_interval)
-                print(f"Interval {len(extracted_intervals)} extracted successfully.")
-            else:
-                print(f"Interval {len(extracted_intervals)} has discontinuities. Skipping.")
-        else:
+        if data_in_interval.empty:
             continue
+
+        # タイムスタンプの差分を計算し、連続性を確認
+        time_diffs = data_in_interval['Timestamp'].diff().dt.total_seconds().dropna()
+        if time_diffs.between(0.015, 0.025).all():  # 50Hzに近い（0.02秒）の許容範囲
+            extracted_intervals.append(data_in_interval)
+            print(f"Interval {len(extracted_intervals)} extracted successfully.")
+        else:
+            print(f"Interval {len(extracted_intervals)} has discontinuities. Skipping.")
 
     print(f"抽出されたインターバル数: {len(extracted_intervals)}")
     return extracted_intervals
+
+def has_long_nan_block(series, threshold):
+    """
+    シリーズ内にthreshold以上の連続したNaNブロックが存在するかを判定する関数。
+
+    Parameters:
+    - series (pd.Series): チェック対象のシリーズ。
+    - threshold (int): 許容する最大連続NaNの数。
+
+    Returns:
+    - bool: threshold以上の連続NaNブロックが存在する場合はTrue、そうでなければFalse。
+    """
+    is_nan = series.isna()
+    # 連続するNaNのグループ番号を割り当て
+    nan_groups = (is_nan != is_nan.shift()).cumsum()
+    # 各NaNグループのサイズを取得
+    nan_group_sizes = is_nan.groupby(nan_groups).sum()
+    # threshold以上のNaNグループが存在するか判定
+    return (nan_group_sizes >= threshold).any()
+
+def preprocess_sequence(df, sampling_rate=50.0, max_gap_seconds=0.1):
+    """
+    単一のシーケンスデータに対する前処理を行う関数。
+
+    Parameters:
+    - df (pd.DataFrame): シーケンスデータのDataFrame。
+    - sampling_rate (float): サンプリング周波数（Hz）。
+    - max_gap_seconds (float): 補間可能な最大欠損期間（秒）。
+
+    Returns:
+    - pd.DataFrame: 前処理後のDataFrame。
+    """
+    max_gap_frames = int(max_gap_seconds * sampling_rate)  # 0.1秒 => 5フレーム
+
+    # 0. 不要なカラムを削除
+    df = df.drop(columns=[col for col in COLUMNS_TO_DROP if col in df.columns])
+
+    # 1. 固視点座標の欠損値を -1 で埋める
+    for coord in ['Fixation point X', 'Fixation point Y']:
+        if coord in df.columns:
+            # マスク特徴量の追加
+            mask_col = f"{coord}_Mask"
+            df[mask_col] = df[coord].notna().astype(int)
+            # NaNを-1で埋める
+            df[coord] = df[coord].fillna(-1)
+
+    # 2. Gaze directionの線形補間と正規化
+    gaze_directions = ['Gaze direction left X', 'Gaze direction left Y', 'Gaze direction left Z', 'Gaze direction right X', 'Gaze direction right Y', 'Gaze direction right Z']
+    for gaze_col in gaze_directions:
+        if gaze_col in df.columns:
+            # 線形補間を適用
+            df[gaze_col] = df[gaze_col].interpolate(method='linear', limit=max_gap_frames, limit_direction='both')
+            # 欠損が残る場合は前後の値で補完
+            df[gaze_col] = df[gaze_col].fillna(method='ffill').fillna(method='bfill')
+
+    # Gaze directionベクトルの正規化
+    for gaze_prefix in ['Gaze direction left', 'Gaze direction right']:
+        gaze_cols = [f"{gaze_prefix} X", f"{gaze_prefix} Y", f"{gaze_prefix} Z"]
+        if all(col in df.columns for col in gaze_cols):
+            # ベクトルの大きさを計算
+            magnitude = np.sqrt(df[gaze_cols].pow(2).sum(axis=1))
+            # 大きさが0でない場合のみ正規化
+            non_zero = magnitude != 0
+            df.loc[non_zero, gaze_cols] = df.loc[non_zero, gaze_cols].div(magnitude[non_zero], axis=0)
+
+    # 3. Gaze pointの線形補間
+    gaze_points = ['Gaze point X', 'Gaze point Y']
+    for gaze_col in gaze_points:
+        if gaze_col in df.columns:
+            # 線形補間を適用
+            df[gaze_col] = df[gaze_col].interpolate(method='linear', limit=max_gap_frames, limit_direction='both')
+            # 欠損が残る場合は前後の値で補完
+            df[gaze_col] = df[gaze_col].fillna(method='ffill').fillna(method='bfill')
+
+    # 4. 3D位置関連の3次スプライン補間
+    spline_columns = ['Gaze point 3D X', 'Gaze point 3D Y', 'Gaze point 3D Z', 'Pupil position left X', 'Pupil position left Y', 'Pupil position left Z', 'Pupil position right X', 'Pupil position right Y', 'Pupil position right Z']
+    for spline_col in spline_columns:
+        if spline_col in df.columns:
+            # スプライン補間を適用
+            # スプライン補間には十分なデータ点が必要
+            if df[spline_col].notna().sum() >= 4:
+                try:
+                    spline = UnivariateSpline(df.index[~df[spline_col].isna()], df[spline_col].dropna(), k=3, s=0)
+                    df[spline_col] = spline(df.index)
+                except Exception as e:
+                    print(f"スプライン補間中にエラーが発生しました: {e}")
+                    # 補間に失敗した場合は線形補間にフォールバック
+                    df[spline_col] = df[spline_col].interpolate(method='linear', limit=max_gap_frames, limit_direction='both')
+            else:
+                # スプライン補間に必要なデータ点が不足している場合、線形補間にフォールバック
+                df[spline_col] = df[spline_col].interpolate(method='linear', limit=max_gap_frames, limit_direction='both')
+            # 欠損が残る場合は前後の値で補完
+            df[spline_col] = df[spline_col].fillna(method='ffill').fillna(method='bfill')
+
+    # 5. その他の数値特徴量の補間
+    # 除外するカラム（マスク特徴量も含む）
+    exclude_cols = ['Fixation point X', 'Fixation point Y'] + gaze_directions + gaze_points + spline_columns + [f"{coord}_Mask" for coord in ['Fixation point X', 'Fixation point Y']]
+    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    for col in numeric_cols:
+        if col in exclude_cols:
+            continue
+        # 線形補間を適用
+        df[col] = df[col].interpolate(method='linear', limit=max_gap_frames, limit_direction='both')
+        # 欠損が残る場合は前後の値で補完
+        df[col] = df[col].fillna(method='ffill').fillna(method='bfill')
+
+    # 6. 残る NaN を 0 で埋める
+    if df.isnull().values.any():
+        print("残る NaN を 0 で埋めます。")
+        df = df.fillna(0)
+
+    return df
+
+def preprocess_and_filter_sequences(
+    X: list,
+    y_labels: list,
+    true_labels: list,
+    sampling_rate=50.0,
+    max_gap_seconds=0.1,
+    max_nan_seconds=1.0  # 1秒間のNaNを許容
+) -> (list, list, list):
+    """
+    シーケンスデータの前処理とフィルタリングを行う関数。
+    1秒間（50サンプル）以上連続するNaNが存在するシーケンスは削除します。
+
+    Parameters:
+    - X (list): シーケンスデータのリスト（各シーケンスは DataFrame または NumPy 配列）
+    - y_labels (list): 各シーケンスのラベル
+    - true_labels (list): 各シーケンスの真偽ラベル
+    - sampling_rate (float): サンプリング周波数（Hz）
+    - max_gap_seconds (float): 補間可能な最大欠損期間（秒）
+    - max_nan_seconds (float): 削除対象とする最大欠損期間（秒）
+
+    Returns:
+    - filtered_X_scaled (list): 前処理とスケーリングを施したシーケンスデータのリスト
+    - filtered_y_labels (list): フィルタリング後のラベルリスト
+    - filtered_true_labels (list): フィルタリング後の真偽ラベルリスト
+    - scaler (StandardScaler): フィット済みスケーラー
+    """
+    filtered_X = []
+    filtered_y = []
+    filtered_true = []
+    max_nan_frames = int(max_nan_seconds * sampling_rate)  # 1秒 => 50フレーム
+
+    for idx, sequence in enumerate(X):
+        # シーケンスがDataFrameでない場合、DataFrameに変換
+        if isinstance(sequence, np.ndarray):
+            df = pd.DataFrame(sequence)
+        elif isinstance(sequence, pd.DataFrame):
+            df = sequence.copy()
+        else:
+            print(f"シーケンス {idx} がDataFrameでもNumPy配列でもありません。スキップします。")
+            continue
+
+        # 固視点座標の欠損チェック
+        has_long_nan = False
+        for coord in ['Fixation point X', 'Fixation point Y']:
+            if coord in df.columns:
+                if has_long_nan_block(df[coord], max_nan_frames):
+                    has_long_nan = True
+                    break
+
+        if has_long_nan:
+            print(f"シーケンス {idx} は1秒以上連続するNaNを含むため、削除されました。")
+            continue
+
+        # 前処理を適用
+        df_processed = preprocess_sequence(df, sampling_rate, max_gap_seconds)
+
+        # 数値型カラムのみを選択（再確認）
+        df_processed = df_processed.drop(columns='Timestamp')
+
+        filtered_X.append(df_processed)
+        filtered_y.append(y_labels[idx])
+        filtered_true.append(true_labels[idx])
+
+    print(f"フィルタリング後のデータ数: {len(filtered_X)}")
+
+    if not filtered_X:
+        print("フィルタリング後にデータが存在しません。")
+        return [], [], [], None
+
+    return filtered_X, filtered_y, filtered_true
