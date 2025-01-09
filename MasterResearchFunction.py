@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 
 # 数値計算とデータ処理
-import bottleneck as bn
+#import bottleneck as bn
 import numpy as np
 import pandas as pd
 
@@ -239,6 +239,58 @@ def load_gesture_eye_data_pickle(name: str, labels: list[str], columns_to_drop: 
         gesture_labels.extend([label] * len(processed_data))
     return gesture_eye_data, gesture_labels
 
+def load_trimmed_gesture_data(names, base_dir):
+    """
+    トリミング済みジェスチャーデータを読み込む関数。
+
+    Parameters:
+    - names (list[str]): 被験者名のリスト
+    - base_dir (str): トリミング済みデータが保存されているディレクトリのベースパス
+
+    Returns:
+    - dict: 読み込んだトリミング済みデータ（辞書形式）
+    """
+    loaded_data = {}
+
+    for name in names:
+        file_path = os.path.join(base_dir, name, "motion", f"{name}_trimmed_gesture_data.pkl")
+
+        if not os.path.exists(file_path):
+            print(f"ファイルが見つかりません: {file_path}")
+            continue
+
+        with open(file_path, "rb") as f:
+            trimmed_data = pickle.load(f)
+            loaded_data[name] = trimmed_data
+            print(f"{name} のトリミング済みデータを読み込みました。")
+
+    return loaded_data
+
+def calculate_length_extremes(trimmed_data_dict):
+    """
+    トリミング済みデータの各ジェスチャラベルにおけるデータ長の最短と最長を計算。
+
+    Parameters:
+    - trimmed_data_dict (dict): トリミング済みジェスチャーデータの辞書
+
+    Returns:
+    - dict: 各nameとlabelに対応する最短・最長長さを格納した辞書
+    """
+    length_extremes = {}
+
+    for name, labels_data in trimmed_data_dict.items():
+        length_extremes[name] = {}
+        for label, data_list in labels_data.items():
+            if data_list:  # データリストが空でない場合
+                lengths = [len(data) for data in data_list]
+                min_length = min(lengths)
+                max_length = max(lengths)
+                length_extremes[name][label] = {"min_length": min_length, "max_length": max_length}
+            else:
+                length_extremes[name][label] = {"min_length": None, "max_length": None}
+
+    return length_extremes
+
 def spring(G: list[float], QG: list[float], Th: float) -> list[tuple[int, float, int, int]]:
     """
     SPRINGアルゴリズムを使用して、時間シリーズデータのセグメントを検索する関数。
@@ -421,13 +473,13 @@ def combine_and_find_overlapping_segments(
                 current_overlap = (current_start, max(current_end, end))
                 current_count += 1
             else:
-                if current_count >= 3:
+                if current_count >= 2:
                     overlap_ranges.append(current_overlap)
                 current_overlap = (start, end)
                 current_count = 1
 
     # 最後の重なり合い範囲を確認して追加
-    if current_count >= 3:
+    if current_count >= 2:
         overlap_ranges.append(current_overlap)
 
     return overlap_ranges
@@ -948,3 +1000,79 @@ def preprocess_and_filter_sequences(
         return [], [], [], None
 
     return filtered_X, filtered_y, filtered_true
+
+def trim_and_save_gesture_data(gesture_data_dict, names, labels, output_base_path):
+    """
+    教師データのトリミングと保存を行う関数。
+
+    Parameters:
+    - gesture_data_dict (dict): 各被験者とジェスチャーのデータを格納した辞書。
+    - names (list): 被験者名のリスト。
+    - labels (list): ジェスチャーラベルのリスト。
+    - output_base_path (str): トリミング後のデータを保存する基底パス。
+
+    Returns:
+    - None
+    """
+    # トリミング後のデータを保存する辞書
+    trimmed_gesture_data = {}
+
+    for name in names:
+        print(f"Processing {name}...")
+        trimmed_gesture_data[name] = {}
+
+        for label in labels:
+            print(f"Processing gesture: {label}...")
+            data_list = gesture_data_dict[name, label]  # 該当被験者とジェスチャーのデータリスト
+            trimmed_gesture_data[name][label] = []  # このジェスチャーのデータリストを初期化
+
+            for i, data in enumerate(data_list):
+                # データをプロットして確認
+                plt.figure(figsize=(12, 6))
+                plt.plot(data["EuclideanNorm"], label="EuclideanNorm", color="blue", linewidth=1.5)
+                plt.plot(data["AccelerationX"], label="AccelerationX", color="red", alpha=0.6)
+                plt.plot(data["AccelerationY"], label="AccelerationY", color="green", alpha=0.6)
+                plt.plot(data["AccelerationZ"], label="AccelerationZ", color="orange", alpha=0.6)
+
+                # 軸ラベルとグリッド
+                plt.title(f"{name} - {label} - Sample {i}", fontsize=16)
+                plt.xlabel("Time Step", fontsize=12)
+                plt.ylabel("Value", fontsize=12)
+                plt.legend(fontsize=12)
+                plt.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.7)
+
+                # 横軸メモリを細かくする
+                plt.xticks(
+                    ticks=range(0, len(data), max(len(data) // 20, 1)),  # 最大20区切りになるよう調整
+                    fontsize=10,
+                    rotation=45
+                )
+                plt.tight_layout()
+                plt.show()
+
+                # トリミング範囲を入力
+                print("このデータのトリミング範囲を指定してください：")
+                start_idx = input(f"開始インデックス (0-{len(data)-1}, スキップする場合は空白): ")
+
+                if not start_idx.strip():
+                    print(f"データ {i} をスキップしました。")
+                    continue
+
+                start_idx = int(start_idx)
+                end_idx = int(input(f"終了インデックス (0-{len(data)-1}): "))
+
+                # トリミング
+                trimmed_data = data.iloc[start_idx:end_idx].reset_index(drop=True)
+                trimmed_gesture_data[name][label].append(trimmed_data)
+
+                print(f"データ {i} をトリミングして保存しました： {start_idx} から {end_idx}")
+
+        # トリミング後のデータを pkl ファイルに保存
+        output_dir = os.path.join(output_base_path, name, "motion")
+        os.makedirs(output_dir, exist_ok=True)  # ディレクトリが存在しない場合は作成
+        output_file = os.path.join(output_dir, f"{name}_trimmed_gesture_data.pkl")
+
+        with open(output_file, "wb") as f:
+            pickle.dump(trimmed_gesture_data[name], f)
+
+        print(f"{name} のトリミング後のデータを {output_file} に保存しました。")
