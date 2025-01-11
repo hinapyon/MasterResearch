@@ -55,14 +55,6 @@ from scipy.signal import savgol_filter
 from scipy.spatial.distance import euclidean
 from tslearn.metrics import dtw_path
 
-COLUMNS_TO_DROP = [
-    'Sensor', 'Participant name', 'Event', 'Event value',
-    'Eye movement type', 'Eye movement type index', 'Ungrouped',
-    'Validity left', 'Validity right', 'Gaze event duration', 'Gaze2D_Distance',
-    'Fixation_Distance', 'Gaze3D_Distance', 'Pupil_Diameter_Change',
-    'GazeDirection_Distance', 'PupilPosition_Distance'
-]
-
 def process_apple_watch_csv(file_path: str) -> pd.DataFrame:
     """
     Apple Watchからのモーションデータを読み込み、処理する関数
@@ -266,6 +258,33 @@ def load_trimmed_gesture_data(names, base_dir):
 
     return loaded_data
 
+def load_trimmed_first_gesture_data(names, base_dir):
+    """
+    トリミング済みジェスチャーデータを読み込む関数。
+
+    Parameters:
+    - names (list[str]): 被験者名のリスト
+    - base_dir (str): トリミング済みデータが保存されているディレクトリのベースパス
+
+    Returns:
+    - dict: 読み込んだトリミング済みデータ（辞書形式）
+    """
+    loaded_data = {}
+
+    for name in names:
+        file_path = os.path.join(base_dir, name, "motion", f"{name}_trimmed_first_gesture_data.pkl")
+
+        if not os.path.exists(file_path):
+            print(f"ファイルが見つかりません: {file_path}")
+            continue
+
+        with open(file_path, "rb") as f:
+            trimmed_data = pickle.load(f)
+            loaded_data[name] = trimmed_data
+            print(f"{name} のファーストトリミング済みデータを読み込みました。")
+
+    return loaded_data
+
 def calculate_length_extremes(trimmed_data_dict):
     """
     トリミング済みデータの各ジェスチャラベルにおけるデータ長の最短と最長を計算。
@@ -444,13 +463,15 @@ def three_axis_filter_segments_by_elapsed_time(segments_tuple: tuple[list[list[i
 def combine_and_find_overlapping_segments(
     segx: list[tuple[int, float, int, int]],
     segy: list[tuple[int, float, int, int]],
-    segz: list[tuple[int, float, int, int]]
+    segz: list[tuple[int, float, int, int]],
+    overlap_count: int
 ) -> list[tuple[int, int]]:
     """
     3軸のセグメントを統合し、重なり合う時間範囲を見つける関数
 
     Parameters:
-    segx, segy, segz (list of tuples): 各軸のセグメントリスト (i, d_min, t_s, t_e)
+    - segx, segy, segz (list of tuples): 各軸のセグメントリスト (i, d_min, t_s, t_e)
+    - overlap_count (int): どれだけ重なったかの下限
 
     Returns:
     overlap_ranges (list of tuples): 重なり合った時間範囲のリスト (start, end)
@@ -473,31 +494,32 @@ def combine_and_find_overlapping_segments(
                 current_overlap = (current_start, max(current_end, end))
                 current_count += 1
             else:
-                if current_count >= 2:
+                if current_count >= overlap_count:
                     overlap_ranges.append(current_overlap)
                 current_overlap = (start, end)
                 current_count = 1
 
     # 最後の重なり合い範囲を確認して追加
-    if current_count >= 2:
+    if current_count >= overlap_count:
         overlap_ranges.append(current_overlap)
 
     return overlap_ranges
 
-
 def combine_and_find_overlapping_all_segments(
-    segments: list[list[list[tuple[int, float, int, int]]]]
+    segments: list[list[list[tuple[int, float, int, int]]]],
+    overlap_count: int
 ) -> list[list[tuple[int, int]]]:
     """
     各教師データの結果ごとにオーバーラップを検出する関数
 
     Parameters:
     segments (list of lists of tuples): 各軸のセグメントリスト。各セグメントリストは (l, d_min, t_s, t_e) のタプルを含む。
+    overlap_count (int): どれだけ重なったかの下限
 
     Returns:
     list of lists of tuples: 重複している区間のリスト。各区間は (t_s, t_e) のタプルで構成される。
     """
-    return [combine_and_find_overlapping_segments(segments[0][i], segments[1][i], segments[2][i]) for i in range(len(segments[0]))]
+    return [combine_and_find_overlapping_segments(segments[0][i], segments[1][i], segments[2][i], overlap_count) for i in range(len(segments[0]))]
 
 def filter_overlaps_by_elapsed_time(
     overlap: list[list[tuple[int, int]]],
@@ -564,7 +586,8 @@ def filter_and_combine_segments(
     segments: list[list[tuple[int, float, int, int]]],
     Hz: int,
     min_time: float,
-    max_time: float
+    max_time: float,
+    overlap_count: int
 ) -> list[tuple[int, int]]:
     """
     セグメントをフィルタリングし、重なり合っている部分を統合する関数。
@@ -581,6 +604,7 @@ def filter_and_combine_segments(
         フィルタリングの下限となる最小経過時間（秒）。
     max_time (float):
         フィルタリングの上限となる最大経過時間（秒）。
+    overlap_count (int): どれだけ重なったかの下限
 
     Returns:
     list of tuples:
@@ -591,7 +615,7 @@ def filter_and_combine_segments(
     filtered_segments = three_axis_filter_segments_by_elapsed_time(segments, Hz, min_time, max_time)
 
     # フィルタリングされたセグメントから、各教師データごとに重なり合いを検出
-    overlapping_segments = combine_and_find_overlapping_all_segments(filtered_segments)
+    overlapping_segments = combine_and_find_overlapping_all_segments(filtered_segments, overlap_count)
 
     # 重なり合っているセグメントを、経過時間に基づいてさらにフィルタリング
     filtered_overlaps = filter_overlaps_by_elapsed_time(overlapping_segments, Hz, min_time, max_time)
@@ -600,6 +624,38 @@ def filter_and_combine_segments(
     final_segments = combine_overlapping_segments(filtered_overlaps)
 
     return final_segments
+
+# グラフプロット関数
+def plot_detected_segments_with_highlights(data, marking_intervals, detected_intervals):
+    """
+    データの区間をハイライトしてプロットする関数。
+
+    Parameters:
+    - data (pd.DataFrame): プロットするデータ。
+    - marking_intervals (list of tuple): ['Marking']がTrueであるインデックスのリスト。
+    - detected_intervals (list of tuple): SPRINGで検出されたインデックスのリスト。
+    """
+    plt.figure(figsize=(12, 6))
+
+    # 元データをプロット
+    plt.plot(data.index, data['EuclideanNorm'], label='EuclideanNorm', color='blue')
+
+    # ['Marking']がTrueの区間を黄色でハイライト
+    for start, end in marking_intervals:
+        plt.axvspan(start, end, color='yellow', alpha=0.3, label='Marking=True' if start == marking_intervals[0][0] else "")
+
+    # SPRINGで検出された区間を青色でハイライト
+    for start, end in detected_intervals:
+        plt.axvspan(start, end, color='cyan', alpha=0.4, label='SPRING Detected' if start == detected_intervals[0][0] else "")
+
+    # グラフ設定
+    plt.title("Detected Segments with Highlights", fontsize=16)
+    plt.xlabel("Time Step", fontsize=12)
+    plt.ylabel("EuclideanNorm", fontsize=12)
+    plt.legend(fontsize=12)
+    plt.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.7)
+    plt.tight_layout()
+    plt.show()
 
 #検出された区間のタイムスタンプを出力するやつ
 def extract_timestamp_from_overlap(motion_data, combine_overlap):
@@ -668,6 +724,84 @@ def find_true_intervals(df: pd.DataFrame, column_name: str = 'Marking') -> list:
 
     return true_intervals
 
+def trim_and_save_gesture_data(gesture_data_dict, names, labels, output_base_path):
+    """
+    教師データのトリミングと保存を行う関数。
+
+    Parameters:
+    - gesture_data_dict (dict): 各被験者とジェスチャーのデータを格納した辞書。
+    - names (list): 被験者名のリスト。
+    - labels (list): ジェスチャーラベルのリスト。
+    - output_base_path (str): トリミング後のデータを保存する基底パス。
+
+    Returns:
+    - None
+    """
+    # トリミング後のデータを保存する辞書
+    trimmed_gesture_data = {}
+
+    for name in names:
+        print(f"Processing {name}...")
+        trimmed_gesture_data[name] = {}
+
+        for label in labels:
+            print(f"Processing gesture: {label}...")
+            data_list = gesture_data_dict[name, label]  # 該当被験者とジェスチャーのデータリスト
+            trimmed_gesture_data[name][label] = []  # このジェスチャーのデータリストを初期化
+
+            for i, data in enumerate(data_list):
+                # データをプロットして確認
+                plt.figure(figsize=(12, 6))
+                plt.plot(data["EuclideanNorm"], label="EuclideanNorm", color="blue", linewidth=1.5)
+                plt.plot(data["AccelerationX"], label="AccelerationX", color="red", alpha=0.6)
+                plt.plot(data["AccelerationY"], label="AccelerationY", color="green", alpha=0.6)
+                plt.plot(data["AccelerationZ"], label="AccelerationZ", color="orange", alpha=0.6)
+
+                # 軸ラベルとグリッド
+                plt.title(f"{name} - {label} - Sample {i}", fontsize=16)
+                plt.xlabel("Time Step", fontsize=12)
+                plt.ylabel("Value", fontsize=12)
+                plt.legend(fontsize=12)
+                plt.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.7)
+
+                # 横軸メモリを細かくする
+                plt.xticks(
+                    ticks=range(0, len(data), max(len(data) // 20, 1)),  # 最大20区切りになるよう調整
+                    fontsize=10,
+                    rotation=45
+                )
+                plt.tight_layout()
+                plt.show()
+
+                # トリミング範囲を入力
+                print("このデータのトリミング範囲を指定してください：")
+                start_idx = input(f"開始インデックス (0-{len(data)-1}, スキップする場合は空白): ")
+
+                if not start_idx.strip():
+                    print(f"データ {i} をスキップしました。")
+                    continue
+
+                start_idx = int(start_idx)
+                end_idx = int(input(f"終了インデックス (0-{len(data)-1}): "))
+
+                # トリミング
+                trimmed_data = data.iloc[start_idx:end_idx].reset_index(drop=True)
+                trimmed_gesture_data[name][label].append(trimmed_data)
+
+                print(f"データ {i} をトリミングして保存しました： {start_idx} から {end_idx}")
+
+        # トリミング後のデータを pkl ファイルに保存
+        output_dir = os.path.join(output_base_path, name, "motion")
+        os.makedirs(output_dir, exist_ok=True)  # ディレクトリが存在しない場合は作成
+        output_file = os.path.join(output_dir, f"{name}_trimmed_gesture_data.pkl")
+
+        with open(output_file, "wb") as f:
+            pickle.dump(trimmed_gesture_data[name], f)
+
+        print(f"{name} のトリミング後のデータを {output_file} に保存しました。")
+
+
+#Transfformer機械学習モデル構築用の関数
 def get_exclusion_intervals(motion_data: pd.DataFrame) -> pd.DataFrame:
     true_intervals = find_true_intervals(motion_data)
     intervals = [
@@ -837,19 +971,20 @@ def has_long_nan_block(series, threshold):
     # threshold以上のNaNグループが存在するか判定
     return (nan_group_sizes >= threshold).any()
 
-def preprocess_sequence(df, sampling_rate=50.0, max_gap_seconds=0.1):
+def preprocess_sequence(df, COLUMNS_TO_DROP, sampling_rate=50.0, max_gap_seconds=5.0):
     """
     単一のシーケンスデータに対する前処理を行う関数。
 
     Parameters:
     - df (pd.DataFrame): シーケンスデータのDataFrame。
+    - COLUMNS_TO_DROP (list): 削除する不要なカラム名のリスト
     - sampling_rate (float): サンプリング周波数（Hz）。
     - max_gap_seconds (float): 補間可能な最大欠損期間（秒）。
 
     Returns:
     - pd.DataFrame: 前処理後のDataFrame。
     """
-    max_gap_frames = int(max_gap_seconds * sampling_rate)  # 0.1秒 => 5フレーム
+    max_gap_frames = int(max_gap_seconds * sampling_rate)  # 5秒 => 5フレーム
 
     # 0. 不要なカラムを削除
     df = df.drop(columns=[col for col in COLUMNS_TO_DROP if col in df.columns])
@@ -934,9 +1069,10 @@ def preprocess_and_filter_sequences(
     X: list,
     y_labels: list,
     true_labels: list,
+    COLUMNS_TO_DROP: list,
     sampling_rate=50.0,
     max_gap_seconds=0.1,
-    max_nan_seconds=1.0  # 1秒間のNaNを許容
+    max_nan_seconds=5.0,  # 1秒間のNaNを許容
 ) -> (list, list, list):
     """
     シーケンスデータの前処理とフィルタリングを行う関数。
@@ -949,6 +1085,7 @@ def preprocess_and_filter_sequences(
     - sampling_rate (float): サンプリング周波数（Hz）
     - max_gap_seconds (float): 補間可能な最大欠損期間（秒）
     - max_nan_seconds (float): 削除対象とする最大欠損期間（秒）
+    - COLUMNS_TO_DROP (list): 削除する不要なカラム名のリスト
 
     Returns:
     - filtered_X_scaled (list): 前処理とスケーリングを施したシーケンスデータのリスト
@@ -984,7 +1121,7 @@ def preprocess_and_filter_sequences(
             continue
 
         # 前処理を適用
-        df_processed = preprocess_sequence(df, sampling_rate, max_gap_seconds)
+        df_processed = preprocess_sequence(df, COLUMNS_TO_DROP, sampling_rate, max_gap_seconds)
 
         # 数値型カラムのみを選択（再確認）
         df_processed = df_processed.drop(columns='Timestamp')
@@ -1001,78 +1138,194 @@ def preprocess_and_filter_sequences(
 
     return filtered_X, filtered_y, filtered_true
 
-def trim_and_save_gesture_data(gesture_data_dict, names, labels, output_base_path):
+def preprocess_gesture_data(NAMES, LABELS, COLUMNS_TO_DROP, NON_GESTURE):
     """
-    教師データのトリミングと保存を行う関数。
+    データを読み込んで前処理を行い、ジェスチャーデータと非ジェスチャーデータを統合します。
 
     Parameters:
-    - gesture_data_dict (dict): 各被験者とジェスチャーのデータを格納した辞書。
-    - names (list): 被験者名のリスト。
-    - labels (list): ジェスチャーラベルのリスト。
-    - output_base_path (str): トリミング後のデータを保存する基底パス。
+        NAMES (list): 処理対象のデータ名のリスト。
+        LABELS (list): ラベルのリスト。
+        COLUMNS_TO_DROP (list): 不要なカラムのリスト。
+        NON_GESTURE (int): 抽出する非ジェスチャーデータの個数。
 
     Returns:
-    - None
+        tuple: (X_filled, y_labels, true_labels, data_dict, label_dict, true_label_dict)
     """
-    # トリミング後のデータを保存する辞書
-    trimmed_gesture_data = {}
+    # データとラベルを格納するリストと辞書の初期化
+    X_filled = []
+    y_labels = []
+    true_labels = []
+    data_dict = {}
+    label_dict = {}
+    true_label_dict = {}
 
-    for name in names:
+    for name in NAMES:
         print(f"Processing {name}...")
-        trimmed_gesture_data[name] = {}
 
-        for label in labels:
-            print(f"Processing gesture: {label}...")
-            data_list = gesture_data_dict[name, label]  # 該当被験者とジェスチャーのデータリスト
-            trimmed_gesture_data[name][label] = []  # このジェスチャーのデータリストを初期化
+        # データの読み込みと前処理
+        eye_data, gesture_labels = load_gesture_eye_data_pickle(name, LABELS, COLUMNS_TO_DROP)
+        data_dict[name] = {'gesture': eye_data, 'non_gesture': []}
+        label_dict[name] = {'gesture': gesture_labels, 'non_gesture': []}
+        true_label_dict[name] = {'gesture': ['gesture'] * len(eye_data), 'non_gesture': []}
 
-            for i, data in enumerate(data_list):
-                # データをプロットして確認
-                plt.figure(figsize=(12, 6))
-                plt.plot(data["EuclideanNorm"], label="EuclideanNorm", color="blue", linewidth=1.5)
-                plt.plot(data["AccelerationX"], label="AccelerationX", color="red", alpha=0.6)
-                plt.plot(data["AccelerationY"], label="AccelerationY", color="green", alpha=0.6)
-                plt.plot(data["AccelerationZ"], label="AccelerationZ", color="orange", alpha=0.6)
+        # モーションデータとアイデータの読み込み
+        motion_routine_data, eye_routine_data = load_motion_and_eye_data(name)
+        eye_non_gesture_data = process_tobii_csv(f'datasets/new/{name}/eye/{name}_non_gesture.csv')
 
-                # 軸ラベルとグリッド
-                plt.title(f"{name} - {label} - Sample {i}", fontsize=16)
-                plt.xlabel("Time Step", fontsize=12)
-                plt.ylabel("Value", fontsize=12)
-                plt.legend(fontsize=12)
-                plt.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.7)
+        # gestureデータの長さを算出
+        if isinstance(eye_data, list):
+            lengths = [df.shape[0] for df in eye_data]  # 各データフレームの行数を取得
+            longest_length = max(lengths)
+            shortest_length = min(lengths)
+        else:
+            longest_length = eye_data.shape[0]
+            shortest_length = eye_data.shape[0]
 
-                # 横軸メモリを細かくする
-                plt.xticks(
-                    ticks=range(0, len(data), max(len(data) // 20, 1)),  # 最大20区切りになるよう調整
-                    fontsize=10,
-                    rotation=45
-                )
-                plt.tight_layout()
-                plt.show()
+        print(f"{name} の gesture データの長さ: 最長 {longest_length}, 最短 {shortest_length}")
 
-                # トリミング範囲を入力
-                print("このデータのトリミング範囲を指定してください：")
-                start_idx = input(f"開始インデックス (0-{len(data)-1}, スキップする場合は空白): ")
+        # ランダムな長さでデータを抽出
+        random_non_gesture_data = []
+        available_indices = list(range(eye_non_gesture_data.shape[0]))
 
-                if not start_idx.strip():
-                    print(f"データ {i} をスキップしました。")
-                    continue
+        for _ in range(NON_GESTURE):
+            # ランダムな長さを決定
+            random_length = random.randint(shortest_length, longest_length)
 
-                start_idx = int(start_idx)
-                end_idx = int(input(f"終了インデックス (0-{len(data)-1}): "))
+            # 利用可能なインデックスからランダムに開始位置を選択
+            possible_start_indices = [
+                idx for idx in available_indices if idx + random_length <= len(available_indices)
+            ]
+            if not possible_start_indices:
+                print(f"{name} の non-gesture データに十分なインデックスがありません。")
+                break
 
-                # トリミング
-                trimmed_data = data.iloc[start_idx:end_idx].reset_index(drop=True)
-                trimmed_gesture_data[name][label].append(trimmed_data)
+            start_idx = random.choice(possible_start_indices)
+            end_idx = start_idx + random_length
 
-                print(f"データ {i} をトリミングして保存しました： {start_idx} から {end_idx}")
+            # 抽出したデータを追加
+            random_non_gesture_data.append(eye_non_gesture_data.iloc[start_idx:end_idx])
 
-        # トリミング後のデータを pkl ファイルに保存
-        output_dir = os.path.join(output_base_path, name, "motion")
-        os.makedirs(output_dir, exist_ok=True)  # ディレクトリが存在しない場合は作成
-        output_file = os.path.join(output_dir, f"{name}_trimmed_gesture_data.pkl")
+            # 使用済みインデックスを削除
+            available_indices = [idx for idx in available_indices if idx < start_idx or idx >= end_idx]
 
-        with open(output_file, "wb") as f:
-            pickle.dump(trimmed_gesture_data[name], f)
+        # 抽出したデータを辞書に格納
+        data_dict[name]['non_gesture'] = random_non_gesture_data
+        label_dict[name]['non_gesture'] = ['non_gesture'] * len(random_non_gesture_data)
+        true_label_dict[name]['non_gesture'] = ['non_gesture'] * len(random_non_gesture_data)
 
-        print(f"{name} のトリミング後のデータを {output_file} に保存しました。")
+        print(f"{name} の non-gesture データから {len(random_non_gesture_data)} 個のランダムデータを抽出しました。")
+
+        # ジェスチャーデータの統合
+        for seq, lbl, true_lbl in zip(eye_data, gesture_labels, true_label_dict[name]['gesture']):
+            if seq is not None and len(seq) > 0:
+                X_filled.append(seq)
+                y_labels.append(lbl)
+                true_labels.append(true_lbl)
+            else:
+                print(f"{name} のジェスチャーシーケンスが空です。対応するラベルをスキップします。")
+
+        # 非ジェスチャーデータの統合
+        for seq, lbl, true_lbl in zip(data_dict[name]['non_gesture'], label_dict[name]['non_gesture'], true_label_dict[name]['non_gesture']):
+            if isinstance(seq, pd.DataFrame):
+                if not seq.empty:
+                    X_filled.append(seq)
+                    y_labels.append(lbl)
+                    true_labels.append(true_lbl)
+                else:
+                    print(f"{name} の非ジェスチャーシーケンスが空です。対応するラベルをスキップします。")
+            else:
+                print(f"{name} の非ジェスチャーシーケンスが DataFrame ではありません。スキップします。")
+
+        print(f"総データ数: {len(X_filled)}")
+        print(f"総ラベル数（y_labels）: {len(y_labels)}")
+        print(f"総真偽ラベル数（true_labels）: {len(true_labels)}")
+
+    return X_filled, y_labels, true_labels, data_dict, label_dict, true_label_dict
+
+def check_timestamp_gaps(NAMES, data_dict):
+    """
+    タイムスタンプのギャップを確認します。
+
+    Parameters:
+        NAMES (list): 処理対象のデータ名のリスト。
+        data_dict (dict): 非ジェスチャーデータを含む辞書。
+
+    Returns:
+        None
+    """
+    for name in NAMES:
+        non_gesture_intervals = data_dict[name]['non_gesture']
+        if non_gesture_intervals:
+            for idx, eye_routine_data in enumerate(non_gesture_intervals):
+                if isinstance(eye_routine_data, pd.DataFrame):
+                    if not eye_routine_data.empty:
+                        time_diffs = eye_routine_data['Timestamp'].diff().dt.total_seconds()
+                        large_gaps = time_diffs[time_diffs > 0.05]
+                        # print(f"{name} の non_gesture_intervals[{idx}] の大きなタイムスタンプギャップ数: {len(large_gaps)}")
+                    else:
+                        print(f"{name} の non_gesture_intervals[{idx}] が空です。")
+                else:
+                    print(f"{name} の non_gesture_intervals[{idx}] が DataFrame ではありません。")
+
+def get_positional_encoding(max_len, d_model):
+    """
+    固定のサイン・コサイン位置エンコーディングを生成する関数。
+
+    Parameters:
+    - max_len (int): シーケンスの最大長
+    - d_model (int): 埋め込み次元数
+
+    Returns:
+    - pos_encoding (np.array): 位置エンコーディング行列
+    """
+    angle_rads = np.arange(max_len)[:, np.newaxis] / np.power(10000, (2 * (np.arange(d_model)[np.newaxis, :]//2)) / np.float32(d_model))
+
+    # 偶数次元はsin、奇数次元はcos
+    angle_rads[:, 0::2] = np.sin(angle_rads[:, 0::2])
+    angle_rads[:, 1::2] = np.cos(angle_rads[:, 1::2])
+
+    pos_encoding = angle_rads[np.newaxis, ...]  # (1, max_len, d_model)
+    return tf.cast(pos_encoding, dtype=tf.float32)
+
+def transformer_encoder(inputs, head_size, num_heads, ff_dim, dropout=0):
+    """
+    Transformerエンコーダーブロックを構築する関数。
+    """
+    # 自己注意機構（マスクは自動的に適用される）
+    x = MultiHeadAttention(key_dim=head_size, num_heads=num_heads, dropout=dropout)(inputs, inputs)
+    x = Dropout(dropout)(x)
+    x = LayerNormalization(epsilon=1e-6)(inputs + x)
+
+    # フィードフォワードネットワーク
+    x_ff = Dense(ff_dim, activation='relu')(x)
+    x_ff = Dense(inputs.shape[-1])(x_ff)
+    x_ff = Dropout(dropout)(x_ff)
+    out = LayerNormalization(epsilon=1e-6)(x + x_ff)
+    return out
+
+def build_transformer_model(max_length, num_features, head_size, num_heads, ff_dim, num_transformer_blocks, dropout):
+    """
+    Transformerベースの2値分類モデルを構築する関数。
+    """
+    inputs = Input(shape=(max_length, num_features))
+
+    # マスキングレイヤーの追加（パディング値が0の場合）
+    x = Masking(mask_value=0.0)(inputs)
+
+    # 位置エンコーディングの追加
+    pos_encoding = get_positional_encoding(max_length, num_features)
+    x = x + pos_encoding[:,:max_length, :]
+
+    # Transformerエンコーダーブロックの追加
+    for _ in range(num_transformer_blocks):
+        x = transformer_encoder(x, head_size, num_heads, ff_dim, dropout)
+
+    # グローバルプーリング
+    x = GlobalAveragePooling1D()(x)
+    x = Dropout(dropout)(x)
+
+    # 出力層
+    outputs = Dense(1, activation='sigmoid')(x)
+
+    model = Model(inputs=inputs, outputs=outputs)
+    return model
